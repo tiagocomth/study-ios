@@ -5,6 +5,9 @@
 
 import Foundation
 
-final class EmailValidationService {
+protocol EmailValidationServiceProtocol {
+}
+
+final class EmailValidationService: EmailValidationServiceProtocol {
     // TODO: chamadas de baixo nível
 }

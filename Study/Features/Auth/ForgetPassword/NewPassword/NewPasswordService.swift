@@ -5,6 +5,9 @@
 
 import Foundation
 
-final class NewPasswordService {
+protocol NewPasswordServiceProtocol {
+}
+
+final class NewPasswordService: NewPasswordServiceProtocol {
     // TODO: chamadas de baixo nível
 }

@@ -5,10 +5,13 @@
 
 import Foundation
 
-final class NewPasswordWorker {
-    private let service: NewPasswordService
+protocol NewPasswordWorkerProtocol {
+}
 
-    init(service: NewPasswordService) {
+final class NewPasswordWorker: NewPasswordWorkerProtocol {
+    private let service: NewPasswordServiceProtocol
+
+    init(service: NewPasswordServiceProtocol) {
         self.service = service
     }
 

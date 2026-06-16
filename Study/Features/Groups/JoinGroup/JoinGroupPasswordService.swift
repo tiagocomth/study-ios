@@ -5,6 +5,9 @@
 
 import Foundation
 
-final class JoinGroupPasswordService {
+protocol JoinGroupPasswordServiceProtocol {
+}
+
+final class JoinGroupPasswordService: JoinGroupPasswordServiceProtocol {
     // TODO: chamadas de baixo nível — POST /joinGroupById
 }

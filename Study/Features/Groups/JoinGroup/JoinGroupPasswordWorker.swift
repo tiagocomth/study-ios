@@ -5,10 +5,13 @@
 
 import Foundation
 
-final class JoinGroupPasswordWorker {
-    private let service: JoinGroupPasswordService
+protocol JoinGroupPasswordWorkerProtocol {
+}
 
-    init(service: JoinGroupPasswordService) {
+final class JoinGroupPasswordWorker: JoinGroupPasswordWorkerProtocol {
+    private let service: JoinGroupPasswordServiceProtocol
+
+    init(service: JoinGroupPasswordServiceProtocol) {
         self.service = service
     }
 

@@ -5,10 +5,13 @@
 
 import Foundation
 
-final class RegisterWorker {
-    private let service: RegisterService
+protocol RegisterWorkerProtocol {
+}
 
-    init(service: RegisterService) {
+final class RegisterWorker: RegisterWorkerProtocol {
+    private let service: RegisterServiceProtocol
+
+    init(service: RegisterServiceProtocol) {
         self.service = service
     }
 

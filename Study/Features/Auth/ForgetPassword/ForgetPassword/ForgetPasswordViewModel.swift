@@ -8,9 +8,9 @@ import Combine
 
 final class ForgetPasswordViewModel: ObservableObject {
     weak var coordinator: AuthCoordinator?
-    private let worker: ForgetPasswordWorker
+    private let worker: ForgetPasswordWorkerProtocol
 
-    init(worker: ForgetPasswordWorker) {
+    init(worker: ForgetPasswordWorkerProtocol) {
         self.worker = worker
     }
 

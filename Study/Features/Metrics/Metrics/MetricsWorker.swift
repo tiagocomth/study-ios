@@ -5,6 +5,9 @@
 
 import Foundation
 
-final class MetricsWorker {
+protocol MetricsWorkerProtocol {
+}
+
+final class MetricsWorker: MetricsWorkerProtocol {
     // TODO: ações
 }

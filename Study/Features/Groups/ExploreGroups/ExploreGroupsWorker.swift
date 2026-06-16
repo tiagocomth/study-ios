@@ -5,10 +5,13 @@
 
 import Foundation
 
-final class ExploreGroupsWorker {
-    private let service: ExploreGroupsService
+protocol ExploreGroupsWorkerProtocol {
+}
 
-    init(service: ExploreGroupsService) {
+final class ExploreGroupsWorker: ExploreGroupsWorkerProtocol {
+    private let service: ExploreGroupsServiceProtocol
+
+    init(service: ExploreGroupsServiceProtocol) {
         self.service = service
     }
 

@@ -8,9 +8,9 @@ import Combine
 
 final class MetricsViewModel: ObservableObject {
     weak var coordinator: MetricsCoordinator?
-    private let worker: MetricsWorker
+    private let worker: MetricsWorkerProtocol
 
-    init(worker: MetricsWorker) {
+    init(worker: MetricsWorkerProtocol) {
         self.worker = worker
     }
 

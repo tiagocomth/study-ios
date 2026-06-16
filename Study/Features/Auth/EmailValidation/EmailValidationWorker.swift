@@ -5,10 +5,13 @@
 
 import Foundation
 
-final class EmailValidationWorker {
-    private let service: EmailValidationService
+protocol EmailValidationWorkerProtocol {
+}
 
-    init(service: EmailValidationService) {
+final class EmailValidationWorker: EmailValidationWorkerProtocol {
+    private let service: EmailValidationServiceProtocol
+
+    init(service: EmailValidationServiceProtocol) {
         self.service = service
     }
 

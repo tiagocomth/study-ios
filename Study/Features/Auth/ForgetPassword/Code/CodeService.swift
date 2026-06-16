@@ -5,6 +5,9 @@
 
 import Foundation
 
-final class CodeService {
+protocol CodeServiceProtocol {
+}
+
+final class CodeService: CodeServiceProtocol {
     // TODO: chamadas de baixo nível
 }

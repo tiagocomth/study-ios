@@ -8,9 +8,9 @@ import Combine
 
 final class ProfileViewModel: ObservableObject {
     weak var coordinator: ProfileCoordinator?
-    private let worker: ProfileWorker
+    private let worker: ProfileWorkerProtocol
 
-    init(worker: ProfileWorker) {
+    init(worker: ProfileWorkerProtocol) {
         self.worker = worker
     }
 

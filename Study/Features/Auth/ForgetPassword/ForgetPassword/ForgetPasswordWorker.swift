@@ -5,10 +5,13 @@
 
 import Foundation
 
-final class ForgetPasswordWorker {
-    private let service: ForgetPasswordService
+protocol ForgetPasswordWorkerProtocol {
+}
 
-    init(service: ForgetPasswordService) {
+final class ForgetPasswordWorker: ForgetPasswordWorkerProtocol {
+    private let service: ForgetPasswordServiceProtocol
+
+    init(service: ForgetPasswordServiceProtocol) {
         self.service = service
     }
 

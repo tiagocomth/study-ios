@@ -5,6 +5,9 @@
 
 import Foundation
 
-final class RegisterService {
+protocol RegisterServiceProtocol {
+}
+
+final class RegisterService: RegisterServiceProtocol {
     // TODO: chamadas de baixo nível
 }

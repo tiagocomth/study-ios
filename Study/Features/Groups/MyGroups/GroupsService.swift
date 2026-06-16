@@ -5,6 +5,9 @@
 
 import Foundation
 
-final class GroupsService {
+protocol GroupsServiceProtocol {
+}
+
+final class GroupsService: GroupsServiceProtocol {
     // TODO: chamadas de baixo nível
 }

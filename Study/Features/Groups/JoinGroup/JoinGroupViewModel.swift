@@ -8,9 +8,9 @@ import Combine
 
 final class JoinGroupViewModel: ObservableObject {
     weak var coordinator: GroupCoordinator?
-    private let worker: JoinGroupPasswordWorker
+    private let worker: JoinGroupPasswordWorkerProtocol
 
-    init(worker: JoinGroupPasswordWorker) {
+    init(worker: JoinGroupPasswordWorkerProtocol) {
         self.worker = worker
     }
 

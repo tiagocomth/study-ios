@@ -8,9 +8,9 @@ import Combine
 
 final class StudySessionViewModel: ObservableObject {
     weak var coordinator: StudySessionCoordinator?
-    private let worker: StudySessionWorker
+    private let worker: StudySessionWorkerProtocol
 
-    init(worker: StudySessionWorker) {
+    init(worker: StudySessionWorkerProtocol) {
         self.worker = worker
     }
 

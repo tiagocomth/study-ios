@@ -5,6 +5,9 @@
 
 import Foundation
 
-final class ForgetPasswordService {
+protocol ForgetPasswordServiceProtocol {
+}
+
+final class ForgetPasswordService: ForgetPasswordServiceProtocol {
     // TODO: chamadas de baixo nível
 }

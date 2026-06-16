@@ -8,9 +8,9 @@ import Combine
 
 final class ExploreGroupsViewModel: ObservableObject {
     weak var coordinator: GroupCoordinator?
-    private let worker: ExploreGroupsWorker
+    private let worker: ExploreGroupsWorkerProtocol
 
-    init(worker: ExploreGroupsWorker) {
+    init(worker: ExploreGroupsWorkerProtocol) {
         self.worker = worker
     }
 

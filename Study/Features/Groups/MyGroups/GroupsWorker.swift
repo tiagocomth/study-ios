@@ -5,10 +5,13 @@
 
 import Foundation
 
-final class GroupsWorker {
-    private let service: GroupsService
+protocol GroupsWorkerProtocol {
+}
 
-    init(service: GroupsService) {
+final class GroupsWorker: GroupsWorkerProtocol {
+    private let service: GroupsServiceProtocol
+
+    init(service: GroupsServiceProtocol) {
         self.service = service
     }
 

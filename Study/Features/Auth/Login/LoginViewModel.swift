@@ -8,9 +8,9 @@ import Combine
 
 final class LoginViewModel: ObservableObject {
     weak var coordinator: AuthCoordinator?
-    private let worker: LoginWorker
+    private let worker: LoginWorkerProtocol
 
-    init(worker: LoginWorker) {
+    init(worker: LoginWorkerProtocol) {
         self.worker = worker
     }
 

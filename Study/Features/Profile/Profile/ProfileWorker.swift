@@ -5,6 +5,9 @@
 
 import Foundation
 
-final class ProfileWorker {
+protocol ProfileWorkerProtocol {
+}
+
+final class ProfileWorker: ProfileWorkerProtocol {
     // TODO: ações — GET /userById, PATCH /userById
 }

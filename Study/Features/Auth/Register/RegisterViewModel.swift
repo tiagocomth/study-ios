@@ -8,9 +8,9 @@ import Combine
 
 final class RegisterViewModel: ObservableObject {
     weak var coordinator: AuthCoordinator?
-    private let worker: RegisterWorker
+    private let worker: RegisterWorkerProtocol
 
-    init(worker: RegisterWorker) {
+    init(worker: RegisterWorkerProtocol) {
         self.worker = worker
     }
 

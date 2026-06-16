@@ -8,9 +8,9 @@ import Combine
 
 final class GroupConfigViewModel: ObservableObject {
     weak var coordinator: GroupCoordinator?
-    private let worker: GroupConfigWorker
+    private let worker: GroupConfigWorkerProtocol
 
-    init(worker: GroupConfigWorker) {
+    init(worker: GroupConfigWorkerProtocol) {
         self.worker = worker
     }
 

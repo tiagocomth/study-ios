@@ -8,9 +8,9 @@ import Combine
 
 final class EmailValidationViewModel: ObservableObject {
     weak var coordinator: AuthCoordinator?
-    private let worker: EmailValidationWorker
+    private let worker: EmailValidationWorkerProtocol
 
-    init(worker: EmailValidationWorker) {
+    init(worker: EmailValidationWorkerProtocol) {
         self.worker = worker
     }
 

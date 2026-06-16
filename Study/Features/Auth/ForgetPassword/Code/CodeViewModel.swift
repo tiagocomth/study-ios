@@ -8,9 +8,9 @@ import Combine
 
 final class CodeViewModel: ObservableObject {
     weak var coordinator: AuthCoordinator?
-    private let worker: CodeWorker
+    private let worker: CodeWorkerProtocol
 
-    init(worker: CodeWorker) {
+    init(worker: CodeWorkerProtocol) {
         self.worker = worker
     }
 

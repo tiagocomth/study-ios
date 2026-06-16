@@ -5,6 +5,9 @@
 
 import Foundation
 
-final class CreateGroupService {
+protocol CreateGroupServiceProtocol {
+}
+
+final class CreateGroupService: CreateGroupServiceProtocol {
     // TODO: chamadas de baixo nível — POST /create-groups
 }

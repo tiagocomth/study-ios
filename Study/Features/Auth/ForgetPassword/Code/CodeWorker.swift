@@ -5,10 +5,13 @@
 
 import Foundation
 
-final class CodeWorker {
-    private let service: CodeService
+protocol CodeWorkerProtocol {
+}
 
-    init(service: CodeService) {
+final class CodeWorker: CodeWorkerProtocol {
+    private let service: CodeServiceProtocol
+
+    init(service: CodeServiceProtocol) {
         self.service = service
     }
 
