@@ -6,7 +6,9 @@
 import SwiftUI
 
 final class AuthFactory {
-
+    
+    weak var authCoordinator: AuthCoordinator?
+    
     func makeLoginView() -> some View {
         let viewModel = makeLoginVM()
         return LoginView(viewModel: viewModel)
@@ -32,18 +34,26 @@ final class AuthFactory {
 // MARK: - Internal
 extension AuthFactory {
     private func makeLoginVM() -> LoginViewModel {
-        LoginViewModel(worker: LoginWorker(service: LoginService()))
+        let viewModel = LoginViewModel(worker: LoginWorker(service: LoginService()))
+        viewModel.coordinator = authCoordinator
+        return viewModel
     }
     
     private func makeForgotPasswordVM() -> ForgetPasswordViewModel {
-        ForgetPasswordViewModel(worker: ForgetPasswordWorker(service: ForgetPasswordService()))
+        let viewModel = ForgetPasswordViewModel(worker: ForgetPasswordWorker(service: ForgetPasswordService()))
+        viewModel.coordinator = authCoordinator
+        return viewModel
     }
     
     private func makeCodeVM() -> CodeViewModel {
-        CodeViewModel(worker: CodeWorker(service: CodeService()))
+        let viewModel = CodeViewModel(worker: CodeWorker(service: CodeService()))
+        viewModel.coordinator = authCoordinator
+        return viewModel
     }
     
     private func makeNewPasswordVM() -> NewPasswordViewModel {
-        NewPasswordViewModel(worker: NewPasswordWorker(service: NewPasswordService()))
+        let viewModel = NewPasswordViewModel(worker: NewPasswordWorker(service: NewPasswordService()))
+        viewModel.coordinator = authCoordinator
+        return viewModel
     }
 }

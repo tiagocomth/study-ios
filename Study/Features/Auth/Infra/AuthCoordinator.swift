@@ -12,6 +12,7 @@ final class AuthCoordinator: Coordinator {
 
     init(factory: AuthFactory) {
         self.factory = factory
+        factory.authCoordinator = self
     }
     
     var rootView: some View {
@@ -27,5 +28,28 @@ final class AuthCoordinator: Coordinator {
         case .newPassword:
             factory.makeNewPasswordView()
         }
+    }
+    
+    private func navigateTo(route: AuthRouter) {
+        navigationController.push(router: route)
+    }
+    
+    private func presentSheetTo(route: AuthRouter) {
+        navigationController.presentSheet(router: route)
+    }
+    
+    private func navigateBack() {
+        navigationController.pop()
+    }
+    
+    private func dismissSheet() {
+        navigationController.dismissSheet()
+    }
+}
+
+extension AuthCoordinator: LoginCoordinatorProtocol {
+    
+    func navigateToForgotPassword() {
+        navigateTo(route: .forgotPassword)
     }
 }
