@@ -25,7 +25,6 @@ final class APIClient: APIClientProtocol {
     func request<T>(_ endpoint: any Endpoint) async throws -> T where T : Decodable {
 
         guard let request = RequestBuilder.build(endpoint) else {
-            //TODO: Criar um teste quando não for possivel criar o request
             throw NetworkError.requestBuildFailed(message: "Failed to create request from endpoint.")
         }
 
@@ -35,7 +34,6 @@ final class APIClient: APIClientProtocol {
 
     func request<T>(_ path: String) async throws -> T where T : Decodable {
 
-        //TODO: Escrever um teste para quando a URL for inválida
         guard let url = URL(string: path) else {
             throw NetworkError.invalidURL(message: "Invalid URL.")
         }
@@ -61,12 +59,10 @@ extension APIClient {
         do{
             (data, response) = try await session.data(for: request)
         } catch(let error) {
-            //TODO: Criar um teste para quando a requisicão falhar
             throw NetworkError.network(error)
         }
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            //TODO: Criar um teste para quando não vir resposta
             throw NetworkError.noResponse(message: "Invalid response from server.")
         }
 
@@ -77,12 +73,10 @@ extension APIClient {
             return try decoder.decode(T.self, from: data)
         } catch {
             throw NetworkError.decodingFailed(message: "Failed to decode data to model.")
-            //TODO: Escrever um teste para quando o decode do objeto falhar
         }
 
     }
 
-    //TODO: Escrever um teste para quando a requisição falhar
     func checkStatus(status: Int) throws {
         switch status {
         case 200...299:
