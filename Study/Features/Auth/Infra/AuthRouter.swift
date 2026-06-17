@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum AuthRouter: Identifiable {
+enum AuthRouter: Hashable, Identifiable {
     var id: Self { self }
     
     case forgotPassword

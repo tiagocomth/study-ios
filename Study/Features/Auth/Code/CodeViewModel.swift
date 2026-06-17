@@ -7,12 +7,14 @@ import Foundation
 import Combine
 
 final class CodeViewModel: ObservableObject {
-    weak var coordinator: AuthCoordinator?
+    weak var coordinator: CodeCoordinatorProtocol?
     private let worker: CodeWorkerProtocol
 
     init(worker: CodeWorkerProtocol) {
         self.worker = worker
     }
 
-    // TODO: lógica de apresentação
+    func navigateToNewPassword() {
+        coordinator?.navigateToNewPassword()
+    }
 }

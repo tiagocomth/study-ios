@@ -12,6 +12,10 @@ struct ForgetPasswordView: View {
         VStack {
             Text("ForgetPassword")
                 .font(.title)
+
+            Button("Code") {
+                viewModel.navigateToCode()
+            }
         }
     }
 }

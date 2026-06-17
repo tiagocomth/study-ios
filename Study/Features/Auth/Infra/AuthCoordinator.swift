@@ -42,6 +42,10 @@ final class AuthCoordinator: Coordinator {
         navigationController.pop()
     }
     
+    private func popToRoot() {
+        navigationController.popToRoot()
+    }
+
     private func dismissSheet() {
         navigationController.dismissSheet()
     }
@@ -51,5 +55,26 @@ extension AuthCoordinator: LoginCoordinatorProtocol {
     
     func navigateToForgotPassword() {
         navigateTo(route: .forgotPassword)
+    }
+}
+
+extension AuthCoordinator: ForgetPasswordCoordinatorProtocol {
+
+    func navigateToCode() {
+        navigateTo(route: .code)
+    }
+}
+
+extension AuthCoordinator: CodeCoordinatorProtocol {
+
+    func navigateToNewPassword() {
+        navigateTo(route: .newPassword)
+    }
+}
+
+extension AuthCoordinator: NewPasswordCoordinatorProtocol {
+
+    func navigateBackToRoot() {
+        popToRoot()
     }
 }

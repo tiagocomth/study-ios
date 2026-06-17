@@ -7,12 +7,14 @@ import Foundation
 import Combine
 
 final class ForgetPasswordViewModel: ObservableObject {
-    weak var coordinator: AuthCoordinator?
+    weak var coordinator: ForgetPasswordCoordinatorProtocol?
     private let worker: ForgetPasswordWorkerProtocol
 
     init(worker: ForgetPasswordWorkerProtocol) {
         self.worker = worker
     }
 
-    // TODO: lógica de apresentação
+    func navigateToCode() {
+        coordinator?.navigateToCode()
+    }
 }
