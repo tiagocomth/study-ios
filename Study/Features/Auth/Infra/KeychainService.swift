@@ -8,7 +8,7 @@ import Security
 
 /// Abstraction over secure storage, so the session layer can be tested with a mock.
 protocol KeychainServicing: Sendable {
-    func save(_ data: Data, for key: String) throws
+    func save(_ data: Data, for key: String) throws(KeychainService.KeychainError)
     func read(for key: String) -> Data?
     func delete(for key: String) throws
 }
@@ -45,7 +45,7 @@ final class KeychainService: KeychainServicing {
         case unexpectedStatus(OSStatus)
     }
 
-    func save(_ data: Data, for key: String) throws {
+    func save(_ data: Data, for key: String) throws(KeychainError) {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrAccount as String: key
