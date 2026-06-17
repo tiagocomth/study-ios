@@ -10,9 +10,24 @@
 		A54FB3752FE0F59100A13CE1 /* Study.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Study.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		A54FB3900000000000000001 /* Exceptions for "Study" folder in "Study" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Core/Constants/.gitkeep,
+				Core/Extensions/.gitkeep,
+				Core/Network/.gitkeep,
+			);
+			target = A54FB3742FE0F59100A13CE1 /* Study */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A54FB3772FE0F59100A13CE1 /* Study */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A54FB3900000000000000001 /* Exceptions for "Study" folder in "Study" target */,
+			);
 			path = Study;
 			sourceTree = "<group>";
 		};
