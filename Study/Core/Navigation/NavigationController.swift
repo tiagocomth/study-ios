@@ -22,6 +22,12 @@ import SwiftUI
         navigationPath.removeLast()
     }
     
+    func popToRoot() {
+        guard !navigationPath.isEmpty else { return }
+
+        navigationPath.removeLast(navigationPath.count)
+    }
+    
     func presentSheet<T: Hashable & Identifiable>(router: T, onDismiss: (() -> Void)? = nil ) {
         sheetPath.setSheet(router, onDismiss: onDismiss)
     }
