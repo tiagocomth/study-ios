@@ -5,12 +5,76 @@
 
 import SwiftUI
 
-final class AuthCoordinator {
+final class AuthCoordinator: Coordinator {
+    
+    var navigationController: NavigationController = .init()
     private let factory: AuthFactory
 
     init(factory: AuthFactory) {
         self.factory = factory
+        factory.authCoordinator = self
+    }
+    
+    var rootView: some View {
+        factory.makeLoginView()
     }
 
-    // TODO: navegação do flow
+    func coordinate(to route: AuthRouter) -> some View {
+        switch route {
+        case .forgotPassword:
+            factory.makeForgetPasswordView()
+        case .code:
+            factory.makeCodeView()
+        case .newPassword:
+            factory.makeNewPasswordView()
+        }
+    }
+    
+    private func navigateTo(route: AuthRouter) {
+        navigationController.push(router: route)
+    }
+    
+    private func presentSheetTo(route: AuthRouter) {
+        navigationController.presentSheet(router: route)
+    }
+    
+    private func navigateBack() {
+        navigationController.pop()
+    }
+    
+    private func popToRoot() {
+        navigationController.popToRoot()
+    }
+
+    private func dismissSheet() {
+        navigationController.dismissSheet()
+    }
+}
+
+extension AuthCoordinator: LoginCoordinatorProtocol {
+    
+    func navigateToForgotPassword() {
+        navigateTo(route: .forgotPassword)
+    }
+}
+
+extension AuthCoordinator: ForgetPasswordCoordinatorProtocol {
+
+    func navigateToCode() {
+        navigateTo(route: .code)
+    }
+}
+
+extension AuthCoordinator: CodeCoordinatorProtocol {
+
+    func navigateToNewPassword() {
+        navigateTo(route: .newPassword)
+    }
+}
+
+extension AuthCoordinator: NewPasswordCoordinatorProtocol {
+
+    func navigateBackToRoot() {
+        popToRoot()
+    }
 }

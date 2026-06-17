@@ -9,7 +9,13 @@ struct ForgetPasswordView: View {
     @StateObject var viewModel: ForgetPasswordViewModel
 
     var body: some View {
-        // TODO: UI
-        EmptyView()
+        VStack {
+            Text("ForgetPassword")
+                .font(.title)
+
+            Button("Code") {
+                viewModel.navigateToCode()
+            }
+        }
     }
 }

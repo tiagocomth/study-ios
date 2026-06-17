@@ -7,12 +7,14 @@ import Foundation
 import Combine
 
 final class NewPasswordViewModel: ObservableObject {
-    weak var coordinator: AuthCoordinator?
+    weak var coordinator: NewPasswordCoordinatorProtocol?
     private let worker: NewPasswordWorkerProtocol
 
     init(worker: NewPasswordWorkerProtocol) {
         self.worker = worker
     }
 
-    // TODO: lógica de apresentação
+    func navigateBackToRoot() {
+        coordinator?.navigateBackToRoot()
+    }
 }

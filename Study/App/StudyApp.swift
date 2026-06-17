@@ -7,11 +7,12 @@ import SwiftUI
 
 @main
 struct StudyApp: App {
-
+    
+    @State var appWorker = AppWorker()
+    
     var body: some Scene {
         WindowGroup {
-            // TODO: ponto de entrada — instanciar AppCoordinator/AppFactory
-            EmptyView()
+            CoordinateView(coordinator: appWorker.makeAuthCoordinator())
         }
     }
 }
