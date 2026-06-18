@@ -51,7 +51,10 @@ final class UserSessionService: ObservableObject, UserSessionProtocol {
     }
 
     // MARK: - Data providers
-    var token: String? {
+    /// `nonisolated` so the network layer's `TokenProvider` can read the token
+    /// from any thread while building a request. It is a plain Keychain read,
+    /// which is thread-safe and touches no `@MainActor` state.
+    nonisolated var token: String? {
         keychain.readString(for: AppKeys.userToken.rawValue)
     }
 
