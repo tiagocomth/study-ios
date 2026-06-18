@@ -67,7 +67,7 @@ final class UserSessionService: ObservableObject, UserSessionProtocol {
 
     func startSession(user: User, token: String) {
         do {
-            try keychain.saveString(token, for: AppKeys.userKey.rawValue)
+            try keychain.saveString(token, for: AppKeys.userToken.rawValue)
         } catch {
             logger.error("Failed to save auth token: \(error.localizedDescription)")
         }
