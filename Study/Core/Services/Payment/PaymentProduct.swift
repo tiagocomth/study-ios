@@ -5,7 +5,7 @@
 
 import Foundation
 
-enum ProductIdentifier: String, CaseIterable {
+nonisolated enum ProductIdentifier: String, CaseIterable {
     case premiumMonthly = "com.yourcompany.yourapp.premium.monthly"
 
     var id: String {
@@ -13,7 +13,7 @@ enum ProductIdentifier: String, CaseIterable {
     }
 }
 
-struct PaymentProduct: Sendable, Equatable, Identifiable {
+nonisolated struct PaymentProduct: Sendable, Equatable, Identifiable {
     let identifier: ProductIdentifier
     let name: String
     let description: String
