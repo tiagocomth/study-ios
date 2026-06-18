@@ -15,7 +15,11 @@ import Foundation
 struct RequestBuilder {
     /// Builds a `URLRequest` from an `Endpoint`.
     ///
-    /// - Parameter from: The endpoint that describes baseURL, path, method, task (parameters/body), and headers.
+    /// - Parameters:
+    ///   - from: The endpoint that describes baseURL, path, method, task (parameters/body), and headers.
+    ///   - token: Optional bearer token. When non-empty, an `Authorization: Bearer <token>`
+    ///     header is added. Endpoint-specific `headers` are applied afterwards, so they can
+    ///     still override it when needed.
     /// - Returns: A configured `URLRequest` or `nil` if the final URL cannot be constructed or body serialization fails.
     ///
     /// Behavior:
@@ -25,8 +29,9 @@ struct RequestBuilder {
     /// - `requestPlain`: sets `Content-Length` to `0`.
     /// - `requestURLParameters`: converts the dictionary into `queryItems`.
     /// - `requestJSONBody`: encodes the body using `JSONEncoder`.
+    /// - Injects the bearer `token` when provided.
     /// - Applies additional headers defined in `from.headers`.
-    static func build(_ from: Endpoint) -> URLRequest? {
+    static func build(_ from: Endpoint, token: String? = nil) -> URLRequest? {
 
         // Build URL from scheme, host and path provided by the endpoint
         var components = URLComponents()
@@ -68,6 +73,10 @@ struct RequestBuilder {
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.setValue("application/json", forHTTPHeaderField: "Accept")
 
+        // Authorization (only when a non-empty token is available)
+        if let token, !token.isEmpty {
+            urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         // Additional headers provided by the endpoint
         from.headers?.forEach {
