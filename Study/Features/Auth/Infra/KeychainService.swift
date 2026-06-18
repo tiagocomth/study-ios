@@ -7,13 +7,13 @@ import Foundation
 import Security
 
 /// Abstraction over secure storage, so the session layer can be tested with a mock.
-protocol KeychainServicing: Sendable {
+nonisolated protocol KeychainServicing: Sendable {
     func save(_ data: Data, for key: String) throws(KeychainService.KeychainError)
     func read(for key: String) -> Data?
     func delete(for key: String) throws
 }
 
-extension KeychainServicing {
+nonisolated extension KeychainServicing {
     /// Saves any `Encodable` value as JSON.
     func save<T: Encodable>(_ value: T, for key: String) throws {
         let data = try JSONEncoder().encode(value)
@@ -39,7 +39,7 @@ extension KeychainServicing {
 }
 
 /// Keychain-backed implementation of `KeychainServicing`.
-final class KeychainService: KeychainServicing {
+nonisolated final class KeychainService: KeychainServicing {
 
     enum KeychainError: Error {
         case unexpectedStatus(OSStatus)

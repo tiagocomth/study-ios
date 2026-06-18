@@ -15,7 +15,7 @@ protocol DomainLogging: Sendable {
 
 /// Base class that wraps an `os.Logger` for a single domain (category).
 /// Subclass per domain so each one can be injected and defaulted with `.init()`.
-class DomainLogger: DomainLogging, @unchecked Sendable {
+nonisolated class DomainLogger: DomainLogging, @unchecked Sendable {
     private static let subsystem = Bundle.main.bundleIdentifier ?? "Study"
 
     private let logger: Logger
