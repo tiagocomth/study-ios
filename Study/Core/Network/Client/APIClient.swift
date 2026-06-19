@@ -8,7 +8,7 @@
 import Foundation
 
 protocol APIClientProtocol {
-    func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T
+    func request<T: Decodable>(_ endpoint: Endpoint) async throws(NetworkError) -> T
 }
 
 final class APIClient: APIClientProtocol {
@@ -37,7 +37,7 @@ final class APIClient: APIClientProtocol {
         self.logger = logger
     }
 
-    func request<T>(_ endpoint: any Endpoint) async throws -> T where T : Decodable {
+    func request<T>(_ endpoint: any Endpoint) async throws(NetworkError) -> T where T : Decodable {
 
         guard let request = RequestBuilder.build(endpoint, token: tokenProvider?.token) else {
             throw NetworkError.requestBuildFailed(message: "Failed to create request from endpoint.")
@@ -50,7 +50,7 @@ final class APIClient: APIClientProtocol {
 extension APIClient {
 
 
-    private func perform<T: Decodable>(_ request: URLRequest) async throws -> T {
+    private func perform<T: Decodable>(_ request: URLRequest) async throws(NetworkError) -> T {
 
         logger?.logRequest(request)
 
@@ -91,7 +91,7 @@ extension APIClient {
 
     }
 
-    func checkStatus(status: Int) throws {
+    private func checkStatus(status: Int) throws(NetworkError) {
         switch status {
         case 200...299:
             return

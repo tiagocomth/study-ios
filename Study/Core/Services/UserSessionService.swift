@@ -30,9 +30,6 @@ final class UserSessionService: ObservableObject, UserSessionProtocol {
     // MARK: - Published state
     @Published private(set) var currentUser: User?
 
-    // MARK: - Dependencies
-    private static let userKey = "study_session_user"
-    private static let tokenKey = "study_auth_token"
 
     // `nonisolated` so the `init` (and thus the `shared` singleton) can run in a
     // nonisolated context. Both are immutable and thread-safe.
