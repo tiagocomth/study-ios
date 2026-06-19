@@ -6,8 +6,8 @@
 import Foundation
 
 nonisolated enum ProductIdentifier: String, CaseIterable {
-    case premiumMonthly = "com.yourcompany.yourapp.premium.monthly"
-
+    case premiumMonthly = "com.academy.study.premium.monthly"
+    
     var id: String {
         rawValue
     }
