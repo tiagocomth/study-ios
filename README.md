@@ -1,6 +1,6 @@
-# NomeDoApp
+# Study
 
-> Aplicativo iOS construído com arquitetura **MVVM-C** (MVVM + Coordinators), Workers e Services, organizado em uma estrutura de pastas **Core + Features**.
+> Aplicativo iOS (SwiftUI) construído com arquitetura **MVVM-C** (MVVM + Coordinators), camadas de **Worker** e **Service**, organizado em uma estrutura de pastas **Core + Features**.
 
 ---
 
@@ -10,8 +10,11 @@
 - [Arquitetura](#-arquitetura)
 - [Camadas](#-camadas)
 - [Navegação](#-navegação)
+- [Camada de Rede (Network)](#-camada-de-rede-network)
+- [Sessão e Segurança](#-sessão-e-segurança)
 - [Estrutura de Pastas](#-estrutura-de-pastas)
 - [Como Rodar o Projeto](#-como-rodar-o-projeto)
+- [Testes](#-testes)
 - [Como Criar um Novo Flow](#-como-criar-um-novo-flow)
 - [Decisões Técnicas](#-decisões-técnicas)
 - [Convenções](#-convenções)
@@ -22,20 +25,26 @@
 
 Este projeto segue o padrão **MVVM-C** com camadas adicionais de **Worker** e **Service**, garantindo separação clara de responsabilidades, código testável e features isoladas.
 
-Cada **flow de telas** é autocontido: possui seu próprio **Coordinator** (navegação) e sua própria **Factory** (criação de Views e ViewModels). Um flow pode agrupar várias telas relacionadas — por exemplo, o flow de **Autenticação** reúne Login, Register, Validação de E-mail e Recuperação de Senha.
+Cada **flow de telas** é autocontido: possui seu próprio **Coordinator** (navegação), sua própria **Factory** (criação de Views e ViewModels) e, quando precisa de navegação, um **Router** (enum de rotas). Esses três tipos de infraestrutura ficam juntos numa pasta `Infra/` dentro da feature. Um flow pode agrupar várias telas relacionadas — por exemplo, o flow de **Autenticação** reúne Login, Recuperação de Senha, Código e Nova Senha.
 
 ---
 
 ## 🏗️ Arquitetura
 
 ```
-AppCoordinator  (@Main, @State)
+StudyApp  (@main)
       │
       ▼
-  Coordinator  ──────► Navegação entre as telas de um flow
+  AppWorker  ───────► Composition root: cria e injeta UserSessionService + APIClient
       │
       ▼
-   Factory  ─────────► Cria as Views e gerencia o ciclo de vida dos ViewModels
+AppCoordinator + AppFactory  ─► Decide e cria o primeiro flow
+      │
+      ▼
+  Coordinator  ──────► Navegação entre as telas de um flow (NavigationController)
+      │
+      ▼
+   Factory  ─────────► Cria as Views e injeta os ViewModels (com weak coordinator)
       │
       ▼
 ┌──────────────────────────────────────────────────────────────┐
@@ -44,23 +53,31 @@ AppCoordinator  (@Main, @State)
 └──────────────────────────────────────────────────────────────┘
 ```
 
+### Composition root (`AppWorker`)
+
+O `AppWorker` é instanciado uma vez em `StudyApp` (`@State var appWorker = AppWorker()`). Ele é dono das dependências globais e as injeta para baixo:
+
+- **`UserSessionService`** — fonte única de verdade do usuário logado.
+- **`APIClient`** — único cliente de rede configurado, que lê o token atual da sessão a cada request (via `TokenProvider`).
+- Configura o **`AuthenticationInterceptor`** para fazer **logout automático** sempre que um request retornar `401`.
+
 ### Fluxo de exemplo (Login)
 
 ```
 LoginView
    └─► LoginViewModel.login()
-         └─► LoginWorker.login { loginService, keychain }
-               └─► LoginService.login() ─► Result ─► KeychainService
+         └─► LoginWorker.login()
+               └─► LoginService.login() ─► Result ─► UserSessionService / Keychain
 ```
 
 ### Exemplo de flow agrupando várias telas (AuthCoordinator)
 
 ```
-AuthCoordinator  +  AuthFactory
+AuthCoordinator (Infra)  +  AuthFactory (Infra)  +  AuthRouter (Infra)
    ├── Login            (LoginView / LoginViewModel / LoginWorker / LoginService)
-   ├── Register         (RegisterView / RegisterViewModel / RegisterWorker / RegisterService)
-   ├── EmailValidation  (EmailValidationView / ...ViewModel / ...Worker / ...Service)
-   └── ForgetPassword   (ForgetPassword → Code → NewPassword, cada um com sua tríade)
+   ├── ForgetPassword   (ForgetPasswordView / ...ViewModel / ...Worker / ...Service)
+   ├── Code             (CodeView / CodeViewModel / CodeWorker / CodeService)
+   └── NewPassword      (NewPasswordView / ...ViewModel / ...Worker / ...Service)
 ```
 
 ---
@@ -69,32 +86,83 @@ AuthCoordinator  +  AuthFactory
 
 | Camada | Responsabilidade |
 |--------|------------------|
-| **AppCoordinator** | Ponto de entrada do app (`@Main`). Gerencia o estado global e inicializa o primeiro flow. |
-| **Coordinator** | Controla a navegação entre as telas de um flow específico. |
-| **Factory** | Cria as Views e instancia/gerencia o ciclo de vida dos ViewModels do flow. |
-| **View** | Camada de UI pura, sem lógica de negócio. |
+| **StudyApp** | Ponto de entrada do app (`@main`). Cria o `AppWorker` e apresenta o primeiro flow via `CoordinateView`. |
+| **AppWorker** | Composition root. Cria e injeta as dependências globais (`UserSessionService`, `APIClient`) e configura o logout automático em `401`. |
+| **AppCoordinator / AppFactory** | Decidem e criam o primeiro flow (ex.: `AuthCoordinator`). |
+| **Coordinator** | Controla a navegação entre as telas de um flow. Conforma ao protocolo `Coordinator` e aos `*CoordinatorProtocol` de cada tela. |
+| **Factory** | Cria as Views e instancia/gerencia o ciclo de vida dos ViewModels do flow, injetando o `weak coordinator`. |
+| **Router** | `enum` (`Hashable & Identifiable`) com as rotas possíveis do flow (ex.: `AuthRouter`). |
+| **View** | Camada de UI pura, sem lógica de negócio nem navegação. |
 | **ViewModel** | Prepara os dados para a UI e solicita navegação ao Coordinator (via `weak var coordinator`). |
 | **Worker** | Executa ações do usuário, orquestrando Services e Helpers. |
-| **Service** | Serviços de baixo nível (ex: autenticação, sessão de usuário, persistência em Keychain). |
-| **Helper** | Generalização e utilitários compartilhados entre serviços. |
+| **Service** | Operações de baixo nível (autenticação, sessão, Keychain, timer, StoreKit, etc.). |
+| **Helper / Util** | Generalizações e utilitários compartilhados (loggers, chaves, extensões). |
 
 ---
 
 ## 🧭 Navegação
 
-A navegação é baseada em **Coordinators**, organizados de forma hierárquica:
+A navegação é baseada em **Coordinators** sobre um pequeno framework próprio em `Core/Navigation`:
 
-- O **AppCoordinator** é a raiz e decide qual flow iniciar.
-- Cada **flow de telas** possui seu próprio **Coordinator** filho (ex: `AuthCoordinator`).
-- Cada flow possui também sua própria **Factory** (ex: `AuthFactory`), responsável por criar as telas daquele flow e gerenciar o ciclo de vida dos ViewModels.
+- **`Coordinator`** (protocolo) — define `rootView`, `coordinate(to:)` e um `NavigationController`.
+- **`NavigationController`** (`@Observable`, `@MainActor`) — encapsula um `NavigationPath` (push/pop/popToRoot) e um `SheetPath` (apresentar/dispensar sheets).
+- **`CoordinateView`** — `View` genérica que monta o `NavigationStack`, conecta os `navigationDestination` / `sheetDestination` ao `coordinate(to:)` do coordinator e aplica o modificador de sheet.
+- **`SheetNavigation/`** — `SheetPath`, `SheetModifier` e `SheetFactoryKey` para apresentação de sheets dirigida por rota.
 
-Quando uma tela precisa navegar, o fluxo é:
+Hierarquia:
+
+- O **`AppWorker` + `AppCoordinator`** decidem qual flow iniciar.
+- Cada **flow** possui seu próprio **Coordinator**, **Factory** e **Router** (em `Infra/`).
+- O **Coordinator** conforma aos protocolos por-tela (ex.: `LoginCoordinatorProtocol`), expondo só os métodos de navegação que cada ViewModel precisa conhecer.
+
+Quando uma tela precisa navegar:
 
 ```
-View ─► ViewModel (weak var coordinator) ─► Coordinator ─► Factory cria a próxima View
+View ─► ViewModel (weak var coordinator: SomeCoordinatorProtocol)
+        └─► Coordinator.navigateToX()  ─►  NavigationController.push(router:)
+              └─► CoordinateView resolve a rota em coordinate(to:) ─► Factory cria a próxima View
 ```
 
-> O `ViewModel` mantém uma referência **`weak`** ao Coordinator para evitar retain cycles. A `View` nunca conhece a navegação diretamente, mantendo o desacoplamento.
+> O `ViewModel` mantém referência **`weak`** ao Coordinator (tipado por um `*CoordinatorProtocol`) para evitar retain cycles e acoplamento. A `View` nunca conhece a navegação diretamente.
+
+---
+
+## 🌐 Camada de Rede (Network)
+
+A pasta `Core/Network` concentra todo o networking, isolado das features:
+
+```
+Core/Network/
+├── Client/
+│   ├── APIClient.swift       # APIClientProtocol + implementação async/await
+│   └── RequestBuilder.swift  # Monta URLRequest a partir de um Endpoint (+ token)
+├── Endpoint/
+│   ├── Endpoint.swift        # Protocolo: baseURL, path, method, task, headers
+│   ├── HTTPMethod.swift
+│   └── HTTPTask.swift        # plain / com parâmetros (body, query)
+├── Auth/
+│   ├── AuthenticationInterceptor.swift  # Reage a 401 (callback configurável)
+│   └── TokenProviding.swift             # Fornece o bearer token por request
+├── Logging/
+│   └── NetworkLogger.swift   # Loga request / response / falha (os.Logger)
+└── Models/
+    ├── NetworkError.swift    # Erros tipados (unauthorized, notFound, decoding…)
+    └── EmptyResponse.swift   # Para respostas sem corpo (204 / DELETE)
+```
+
+Pontos-chave:
+
+- **`APIClient`** expõe `request<T: Decodable>(_ endpoint:) async throws -> T`. Injetável: recebe `URLSession`, `TokenProviding`, `AuthenticationInterceptorProtocol` e `NetworkLogging` (todos com defaults), o que o torna fácil de testar.
+- **Detecção vs. reação a 401:** a camada de rede apenas *detecta* o `401` e notifica o `AuthenticationInterceptor`; a *reação* (logout + voltar ao login) é configurada pelo app no `AppWorker`. Assim `Core/Network` não depende da feature de sessão.
+- **Token por request:** o `APIClient` lê o token atual via `TokenProvider { session.token }`, sem armazenar estado de sessão.
+
+---
+
+## 🔐 Sessão e Segurança
+
+- **`UserSessionService`** (`@MainActor`, `ObservableObject`) — fonte única de verdade do usuário logado. Expõe `restore() / startSession() / update() / logout()` e o `token` (leitura `nonisolated` para o `TokenProvider`). Há também o protocolo `UserSessionProtocol` para call sites testáveis.
+- **`KeychainService`** (em `Features/Auth/Infra`) — abstração sobre o Keychain (protocolo `KeychainServicing`), guardando token e usuário codificados em JSON. Usado pela sessão.
+- **Logout automático:** configurado no `AppWorker` — qualquer `401` dispara `session.logout()` no main actor.
 
 ---
 
@@ -103,103 +171,127 @@ View ─► ViewModel (weak var coordinator) ─► Coordinator ─► Factory c
 Inspirada na organização **Core + Features** ([referência](https://medium.com/swiftblade/tidy-up-your-xcode-folders-cde1ac3aff7d)).
 
 ```
-NomeDoApp/
+Study/
+├── App/
+│   └── StudyApp.swift              # @main
 ├── Core/
-│   ├── AppCoordinator/
+│   ├── AppWorker/
+│   │   ├── AppWorker.swift         # Composition root
 │   │   ├── AppCoordinator.swift
 │   │   └── AppFactory.swift
-│   ├── AppDelegate/
-│   │   └── AppDelegate.swift
-│   ├── Services/            # Services globais (KeychainService, UserSessionService, etc.)
-│   ├── Helpers/             # Utilitários compartilhados
-│   ├── Network/             # Camada de networking
+│   ├── Navigation/
+│   │   ├── Coordinator.swift       # Protocolo Coordinator
+│   │   ├── NavigationController.swift
+│   │   ├── CoordinateView.swift
+│   │   ├── NavigationFactory.swift
+│   │   └── SheetNavigation/        # SheetPath, SheetModifier, SheetFactoryKey
+│   ├── Network/                    # Client, Endpoint, Auth, Logging, Models
+│   ├── Services/                   # UserSessionService, StoreKitService, SocialShareService,
+│   │   │                           #   CreateLinkService, OperationQueueService
+│   │   └── Protocol/               # PaymentProtocol, …
+│   ├── Entities/                   # User, Group
 │   ├── Extensions/
-│   └── Constants/           # NotificationNames, URLs, chaves, etc.
+│   ├── Constants/
+│   └── Utils/                      # Loggers, AppKeys
 │
 └── Features/
     ├── Auth/
-    │   ├── Coordinator/
-    │   │   └── AuthCoordinator.swift
-    │   ├── Factory/
-    │   │   └── AuthFactory.swift
-    │   ├── Login/
-    │   │   ├── LoginView.swift
-    │   │   ├── LoginViewModel.swift
-    │   │   ├── LoginWorker.swift
-    │   │   └── LoginService.swift
+    │   ├── Infra/                  # AuthCoordinator, AuthFactory, AuthRouter, KeychainService
+    │   ├── Login/                  # View / ViewModel / Worker / Service / CoordinatorProtocol
     │   ├── Register/
-    │   │   ├── RegisterView.swift
-    │   │   ├── RegisterViewModel.swift
-    │   │   ├── RegisterWorker.swift
-    │   │   └── RegisterService.swift
     │   ├── EmailValidation/
-    │   │   └── ...
+    │   ├── Code/
     │   └── ForgetPassword/
-    │       ├── ForgetPassword/   (ForgetPasswordView / ...ViewModel / ...Worker / ...Service)
-    │       ├── Code/             (CodeView / CodeViewModel / CodeWorker / CodeService)
-    │       └── NewPassword/      (NewPasswordView / ...ViewModel / ...Worker / ...Service)
-    │
-    └── Groups/
-        ├── Coordinator/
-        ├── Factory/
-        ├── ExploreGroups/        (ExploreGroupsView / ...Model / ...Worker / ...Service)
-        └── JoinGroup/            (JoinGroupView / ...)
+    │       ├── ForgetPassword/
+    │       └── NewPassword/
+    ├── Groups/
+    │   ├── Infra/Coordinator/      # GroupCoordinator
+    │   ├── Infra/Factory/          # GroupFactory
+    │   ├── MyGroups/
+    │   ├── ExploreGroups/
+    │   ├── CreateGroup/
+    │   ├── JoinGroup/
+    │   ├── GroupDetails/  (+ Sheets/)
+    │   └── GroupConfig/   (+ Sheets/)
+    ├── StudySession/
+    │   ├── Infra/Coordinator/ · Infra/Factory/
+    │   ├── Services/               # TimerService, BlockService
+    │   └── StudySession/
+    ├── Metrics/
+    │   ├── Infra/Coordinator/ · Infra/Factory/
+    │   └── Metrics/
+    └── Profile/
+        ├── Infra/Coordinator/ · Infra/Factory/
+        └── Profile/
 ```
 
 ### Core
 
-Guarda componentes **compartilhados** que não pertencem a uma feature específica, como `AppCoordinator`, `AppDelegate`, Services globais (`KeychainService`, `UserSessionService`), networking e constantes.
+Componentes **compartilhados** que não pertencem a uma feature específica: composition root (`AppWorker`), framework de navegação, camada de rede, services globais, entidades e utilitários.
 
 ### Features
 
-Cada subpasta é uma **feature/flow autocontido**, com seu próprio `Coordinator` e `Factory`. Um flow pode conter várias telas relacionadas, cada uma seguindo a tríade **View → ViewModel → Worker → Service**.
+Cada subpasta é uma **feature/flow autocontido**. A infraestrutura de navegação do flow (`Coordinator`, `Factory`, `Router`) fica em `Infra/`, e cada tela segue a tríade **View → ViewModel → Worker → Service**.
 
 ---
 
 ## 🚀 Como Rodar o Projeto
 
-> Preencha conforme as configurações reais do projeto.
-
 ### Requisitos
 
-- **Xcode:** `__.__` ou superior
-- **iOS mínimo:** `__.__`
-- **Swift:** `__.__`
-- **Gerenciador de dependências:** `SPM / CocoaPods / Carthage`
+- **Xcode:** 16 ou superior
+- **iOS mínimo:** 17.6
+- **Swift:** 5
+- **Gerenciador de dependências:** Swift Package Manager (sem dependências externas — usa apenas frameworks da Apple: SwiftUI, Security/Keychain, StoreKit)
 
 ### Passos
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/usuario/nome-do-app.git
-cd nome-do-app
+git clone <url-do-repositorio>
+cd Study
 
-# 2. Instale as dependências (se usar CocoaPods)
-pod install
+# 2. Abra o projeto
+open Study.xcodeproj
 
-# 3. Abra o projeto
-open NomeDoApp.xcworkspace   # ou .xcodeproj se usar SPM
+# 3. Selecione o scheme "Study" e rode (⌘R)
 ```
 
-### Configurações necessárias
+---
 
-- Variáveis de ambiente / arquivos de configuração: `___`
-- Schemes disponíveis: `Debug`, `Release`, `___`
+## 🧪 Testes
+
+Os testes ficam em `StudyTests/` e cobrem hoje a camada de rede:
+
+```
+StudyTests/
+├── Network/
+│   ├── APIClientTests.swift
+│   └── RequestBuilderTests.swift
+└── Support/
+    ├── MockURLProtocol.swift   # Intercepta requests para respostas determinísticas
+    └── TestDoubles.swift       # Fakes de TokenProviding, interceptor, logger, etc.
+```
+
+Rode com **⌘U** no Xcode (ou `xcodebuild test -scheme Study`). O `APIClient` foi desenhado para injeção de dependências (`URLSession`, token provider, interceptor e logger), permitindo testar sem rede real via `MockURLProtocol`.
 
 ---
 
 ## 🆕 Como Criar um Novo Flow
 
-Siga este passo a passo ao adicionar uma nova feature:
-
-1. **Crie a pasta** da feature dentro de `Features/` (ex: `Profile/`).
-2. **Crie o Coordinator** (`ProfileCoordinator.swift`) responsável pela navegação do flow.
-3. **Crie a Factory** (`ProfileFactory.swift`) que instancia as Views e ViewModels.
-4. **Crie a View** (`ProfileView.swift`) — apenas UI.
-5. **Crie o ViewModel** (`ProfileViewModel.swift`) com os dados, a lógica de apresentação e um `weak var coordinator`.
-6. **Crie o Worker** (`ProfileWorker.swift`) para as ações que exigem Services.
-7. **Crie o Service** (`ProfileService.swift`) se a feature precisar de operações de baixo nível próprias.
-8. **Conecte o novo Coordinator** ao Coordinator pai (ou ao AppCoordinator).
+1. **Crie a pasta** da feature dentro de `Features/` (ex.: `Profile/`).
+2. **Crie a infra** em `Infra/`:
+   - `ProfileCoordinator.swift` — conforma a `Coordinator`, expõe `rootView` e `coordinate(to:)`.
+   - `ProfileFactory.swift` — cria as Views/ViewModels e injeta o `weak coordinator`.
+   - `ProfileRouter.swift` — `enum` (`Hashable & Identifiable`) com as rotas do flow.
+3. Para cada tela, crie a tríade:
+   - **View** (`ProfileView.swift`) — apenas UI.
+   - **ViewModel** (`ProfileViewModel.swift`) — dados, lógica de apresentação e `weak var coordinator: ProfileCoordinatorProtocol`.
+   - **Worker** (`ProfileWorker.swift`) — ações que exigem Services.
+   - **Service** (`ProfileService.swift`) — operações de baixo nível, se necessário.
+   - **CoordinatorProtocol** (`ProfileCoordinatorProtocol.swift`) — métodos de navegação que a tela precisa.
+4. **Faça o Coordinator conformar** aos `*CoordinatorProtocol` das telas e implementar os métodos de navegação (`push`/`pop`/`presentSheet`).
+5. **Conecte o novo Coordinator** ao Coordinator/Factory pai (ou ao `AppCoordinator`).
 
 > Regra de ouro: a `View` nunca chama Services diretamente nem conhece navegação — tudo passa pelo `ViewModel` → `Worker` / `Coordinator`.
 
@@ -207,26 +299,24 @@ Siga este passo a passo ao adicionar uma nova feature:
 
 ## 🔐 Decisões Técnicas
 
-> Documente aqui o "porquê" das escolhas importantes.
-
-- **Keychain para dados sensíveis:** tokens e credenciais são armazenados via `KeychainService` (Keychain) em vez de UserDefaults, por segurança.
-- **Sessão de usuário:** gerenciada pelo `UserSessionService`, compartilhado entre os flows.
-- **Comunicação ViewModel → Coordinator:** feita por `weak var coordinator` para evitar retain cycles.
-- **Debounce:** usado em buscas reativas (ex: `ExploreGroups`) para reduzir chamadas desnecessárias.
+- **Composition root (`AppWorker`):** dependências globais são criadas num único lugar e injetadas para baixo, em vez de cada service criar a sua. Facilita testes e evita singletons espalhados.
+- **Networking isolado:** `Core/Network` não conhece a feature de sessão. Ele só *detecta* `401` e avisa o `AuthenticationInterceptor`; quem decide deslogar é o app.
+- **Token por request:** o `APIClient` lê o token atual da sessão a cada chamada (closure `TokenProvider`), sem manter estado próprio de autenticação.
+- **Keychain para dados sensíveis:** token e usuário são guardados via `KeychainService` (Keychain), não em UserDefaults.
+- **Navegação própria com Coordinators:** `NavigationController` (`@Observable`) encapsula `NavigationPath` + `SheetPath`, e `CoordinateView` conecta tudo ao `NavigationStack` de forma genérica.
+- **Comunicação ViewModel → Coordinator:** via `weak var coordinator` tipado por um `*CoordinatorProtocol`, evitando retain cycles e expondo só o necessário.
+- **Concorrência:** uso de `async/await`, `@MainActor` e `@Observable` (Swift Concurrency / Observation).
 - **Workers vs Services:** Workers orquestram a lógica de uma ação; Services encapsulam operações de baixo nível reutilizáveis.
-- **Push Notifications:** `descreva como se encaixa na arquitetura`.
+
+> Algumas features (Groups, StudySession, Metrics, Profile) e services (StoreKit, SocialShare, CreateLink, OperationQueue, Timer, Block) já têm a estrutura criada com `// TODO`, aguardando implementação.
 
 ---
 
 ## 📐 Convenções
 
-- **Nomenclatura:** arquivos e tipos nomeados por `Feature + Camada` (ex: `LoginViewModel`, `LoginWorker`, `LoginService`).
-- **Pastas:** mantenha o conjunto fixo de pastas por feature; não crie pastas fora do padrão.
-- **Branch strategy:** `Gitflow / trunk-based / ___`.
-- **Commits:** `Conventional Commits / ___`.
-
----
-
-## 📄 Licença
-
-`Defina a licença do projeto (ex: MIT).`
+- **Nomenclatura:** arquivos e tipos nomeados por `Feature + Camada` (ex.: `LoginViewModel`, `LoginWorker`, `LoginService`).
+- **Pastas:** mantenha o conjunto fixo de pastas por feature; infraestrutura de navegação fica sempre em `Infra/`.
+- **Commits:** Conventional Commits (`feat`, `fix`, `refactor`, `test`, `chore`, …).
+- **Branch strategy:** branches por feature (ex.: `feature/network`).
+</content>
+</invoke>
