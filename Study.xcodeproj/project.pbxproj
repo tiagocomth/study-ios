@@ -10,9 +10,20 @@
 		DA222E622FE4D4870008C2FD /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA222E612FE4D4870008C2FD /* StoreKit.framework */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		DA54FEDA2FE627A2009D2203 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A54FB36D2FE0F59100A13CE1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A54FB3742FE0F59100A13CE1;
+			remoteInfo = Study;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		A54FB3752FE0F59100A13CE1 /* Study.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Study.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DA222E612FE4D4870008C2FD /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		DA54FED62FE627A2009D2203 /* StudyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StudyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -37,6 +48,11 @@
 			path = Study;
 			sourceTree = "<group>";
 		};
+		DA54FED72FE627A2009D2203 /* StudyTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = StudyTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,6 +64,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DA54FED32FE627A2009D2203 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -55,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				A54FB3772FE0F59100A13CE1 /* Study */,
+				DA54FED72FE627A2009D2203 /* StudyTests */,
 				DA222E602FE4D4870008C2FD /* Frameworks */,
 				A54FB3762FE0F59100A13CE1 /* Products */,
 			);
@@ -64,6 +88,7 @@
 			isa = PBXGroup;
 			children = (
 				A54FB3752FE0F59100A13CE1 /* Study.app */,
+				DA54FED62FE627A2009D2203 /* StudyTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -101,6 +126,29 @@
 			productReference = A54FB3752FE0F59100A13CE1 /* Study.app */;
 			productType = "com.apple.product-type.application";
 		};
+		DA54FED52FE627A2009D2203 /* StudyTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DA54FEDE2FE627A2009D2203 /* Build configuration list for PBXNativeTarget "StudyTests" */;
+			buildPhases = (
+				DA54FED22FE627A2009D2203 /* Sources */,
+				DA54FED32FE627A2009D2203 /* Frameworks */,
+				DA54FED42FE627A2009D2203 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				DA54FEDB2FE627A2009D2203 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				DA54FED72FE627A2009D2203 /* StudyTests */,
+			);
+			name = StudyTests;
+			packageProductDependencies = (
+			);
+			productName = StudyTests;
+			productReference = DA54FED62FE627A2009D2203 /* StudyTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -108,11 +156,15 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2640;
+				LastSwiftUpdateCheck = 2650;
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					A54FB3742FE0F59100A13CE1 = {
 						CreatedOnToolsVersion = 26.4.1;
+					};
+					DA54FED52FE627A2009D2203 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = A54FB3742FE0F59100A13CE1;
 					};
 				};
 			};
@@ -131,12 +183,20 @@
 			projectRoot = "";
 			targets = (
 				A54FB3742FE0F59100A13CE1 /* Study */,
+				DA54FED52FE627A2009D2203 /* StudyTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A54FB3732FE0F59100A13CE1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DA54FED42FE627A2009D2203 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -153,7 +213,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DA54FED22FE627A2009D2203 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DA54FEDB2FE627A2009D2203 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A54FB3742FE0F59100A13CE1 /* Study */;
+			targetProxy = DA54FEDA2FE627A2009D2203 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A54FB37E2FE0F59200A13CE1 /* Debug */ = {
@@ -387,6 +462,54 @@
 			};
 			name = Release;
 		};
+		DA54FEDC2FE627A2009D2203 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.academy.studyapp.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Study.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Study";
+			};
+			name = Debug;
+		};
+		DA54FEDD2FE627A2009D2203 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 23AK7X9G78;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.CaioMandarino.StudyTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Study.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Study";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -404,6 +527,15 @@
 			buildConfigurations = (
 				A54FB3812FE0F59200A13CE1 /* Debug */,
 				A54FB3822FE0F59200A13CE1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DA54FEDE2FE627A2009D2203 /* Build configuration list for PBXNativeTarget "StudyTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA54FEDC2FE627A2009D2203 /* Debug */,
+				DA54FEDD2FE627A2009D2203 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
