@@ -5,15 +5,16 @@
 
 import SwiftUI
 
-final class AppCoordinator { // MARK: Ter o estado se está logado ou não
+final class AppCoordinator {
     
-    private let factory: AppFactory
+    private var authCoordinator: AuthCoordinator?
     
-    init(factory: AppFactory) {
-        self.factory = factory
-    }
-
     func makeAuthCoordinator() -> AuthCoordinator {
-        factory.makeAuthCoordinator()
+        guard let authCoordinator else {
+            self.authCoordinator = AuthCoordinator(factory: .init())
+            return self.authCoordinator!
+        }
+        
+        return authCoordinator
     }
 }
