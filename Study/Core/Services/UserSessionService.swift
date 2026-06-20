@@ -30,10 +30,6 @@ final class UserSessionService: ObservableObject, UserSessionProtocol {
     // MARK: - Published state
     @Published private(set) var currentUser: User?
 
-    // MARK: - Dependencies
-    private static let userKey = "study_session_user"
-    private static let tokenKey = "study_auth_token"
-
     // `nonisolated` so the `init` (and thus the `shared` singleton) can run in a
     // nonisolated context. Both are immutable and thread-safe.
     nonisolated private let keychain: KeychainServicing
@@ -51,7 +47,10 @@ final class UserSessionService: ObservableObject, UserSessionProtocol {
     }
 
     // MARK: - Data providers
-    var token: String? {
+    /// `nonisolated` so the network layer's `TokenProvider` can read the token
+    /// from any thread while building a request. It is a plain Keychain read,
+    /// which is thread-safe and touches no `@MainActor` state.
+    nonisolated var token: String? {
         keychain.readString(for: AppKeys.userToken.rawValue)
     }
 
@@ -67,7 +66,7 @@ final class UserSessionService: ObservableObject, UserSessionProtocol {
 
     func startSession(user: User, token: String) {
         do {
-            try keychain.saveString(token, for: AppKeys.userKey.rawValue)
+            try keychain.saveString(token, for: AppKeys.userToken.rawValue)
         } catch {
             logger.error("Failed to save auth token: \(error.localizedDescription)")
         }
