@@ -34,7 +34,7 @@ final class AppWorker {
             Task { @MainActor in session.logout() }
         }
 
-        self.appCoordinator = AppCoordinator(factory: .init())
+        self.appCoordinator = AppCoordinator()
     }
 
     func makeAuthCoordinator() -> AuthCoordinator {
