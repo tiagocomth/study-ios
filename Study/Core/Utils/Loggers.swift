@@ -41,12 +41,12 @@ nonisolated class DomainLogger: DomainLogging, @unchecked Sendable {
 
 final class SessionLogger: DomainLogger, @unchecked Sendable {
     init() { super.init(category: "Session") }
-    
-    
 }
 
 final class AuthLogger: DomainLogger, @unchecked Sendable {
     init() { super.init(category: "Auth") }
 }
 
-
+final class PaymentLogger: DomainLogger, @unchecked Sendable {
+    init() { super.init(category: "Payment") }
+}

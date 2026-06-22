@@ -15,12 +15,16 @@ final class AppWorker {
     /// Single configured network client. Injected downstream into the feature
     /// factories/services (instead of each one creating its own).
     let apiClient: APIClientProtocol
+    let paymentService: PaymentProtocol
 
     private let appCoordinator: AppCoordinator
+    private let paymentLogger: DomainLogging
 
     init() {
         let session = UserSessionService()
         self.userSessionService = session
+        self.paymentLogger = PaymentLogger()
+        self.paymentService = StoreKitPaymentService(logger: paymentLogger)
 
         // One client for the whole app; reads the current token from the session
         // on every request via the token provider closure.
@@ -35,6 +39,7 @@ final class AppWorker {
         }
 
         self.appCoordinator = AppCoordinator()
+        configurePayments()
     }
 
     func makeAuthCoordinator() -> AuthCoordinator {
@@ -42,3 +47,19 @@ final class AppWorker {
     }
 
 }
+
+private extension AppWorker {
+    func configurePayments() {
+        Task {
+            await paymentService.startTransactionListener { [paymentLogger] event in
+                paymentLogger.info("App received payment event: \(event.logDescription)")
+                // TODO: implementar o uso do event
+                
+            }
+
+            await paymentService.refreshEntitlements()
+        }
+    }
+}
+
+//TODO: Implementar o monitoramento de quando voltar para isActive a tela, dando um paymentService.refreshEntitlements()
