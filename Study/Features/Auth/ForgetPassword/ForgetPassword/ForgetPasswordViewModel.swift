@@ -6,7 +6,6 @@
 import Foundation
 import Combine
 
-@MainActor
 final class ForgetPasswordViewModel: ObservableObject {
     weak var coordinator: ForgetPasswordCoordinatorProtocol?
     private let worker: ForgetPasswordWorkerProtocol
@@ -27,11 +26,15 @@ final class ForgetPasswordViewModel: ObservableObject {
         Task {
             do {
                 try await worker.requestPasswordReset(email: email)
-                isLoading = false
-                coordinator?.navigateToCode()
+                await MainActor.run {
+                    isLoading = false
+                    coordinator?.navigateToCode()
+                }
             } catch {
-                isLoading = false
-                errorMessage = error.localizedDescription
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = error.localizedDescription
+                }
             }
         }
     }
