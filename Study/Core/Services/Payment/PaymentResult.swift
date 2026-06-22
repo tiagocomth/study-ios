@@ -12,11 +12,32 @@ enum PaymentPurchaseResult: Sendable, Equatable {
 }
 
 enum PaymentEvent: Sendable, Equatable {
-    case purchased(ProductIdentifier)
-    case revoked(ProductIdentifier)
-    case expired(ProductIdentifier)
+    case purchased(product: ProductIdentifier, transactionJSON: Data)
+    case revoked(product: ProductIdentifier, transactionJSON: Data)
+    case expired(product: ProductIdentifier, transactionJSON: Data)
     case pending(ProductIdentifier)
     case failed(ProductIdentifier?, PaymentError)
+}
+
+extension PaymentEvent {
+    var logDescription: String {
+        switch self {
+        case .purchased(let product, let transactionJSON):
+            return "purchased(\(product.id), transactionJSONBytes: \(transactionJSON.count))"
+
+        case .revoked(let product, let transactionJSON):
+            return "revoked(\(product.id), transactionJSONBytes: \(transactionJSON.count))"
+
+        case .expired(let product, let transactionJSON):
+            return "expired(\(product.id), transactionJSONBytes: \(transactionJSON.count))"
+
+        case .pending(let identifier):
+            return "pending(\(identifier.id))"
+
+        case .failed(let identifier, let error):
+            return "failed(\(identifier?.id ?? "unknown"), \(error.localizedDescription))"
+        }
+    }
 }
 
 enum PaymentError: Error, Sendable, Equatable, LocalizedError {
