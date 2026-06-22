@@ -45,7 +45,8 @@ extension AuthFactory {
     }
     
     private func makeForgotPasswordVM() -> ForgetPasswordViewModel {
-        let viewModel = ForgetPasswordViewModel(worker: ForgetPasswordWorker(service: ForgetPasswordService()))
+        let service = ForgetPasswordService(apiClient: apiClient)
+        let viewModel = ForgetPasswordViewModel(worker: ForgetPasswordWorker(service: service))
         viewModel.coordinator = authCoordinator
         return viewModel
     }

@@ -6,6 +6,7 @@
 import Foundation
 
 protocol ForgetPasswordWorkerProtocol {
+    func requestPasswordReset(email: String) async throws
 }
 
 final class ForgetPasswordWorker: ForgetPasswordWorkerProtocol {
@@ -15,5 +16,24 @@ final class ForgetPasswordWorker: ForgetPasswordWorkerProtocol {
         self.service = service
     }
 
-    // TODO: ações
+    func requestPasswordReset(email: String) async throws {
+        let email = Email(value: email)
+
+        guard email.isValid() else {
+            throw ForgetPasswordWorkerError.invalidEmail
+        }
+
+        try await service.requestPasswordReset(email: email)
+    }
+}
+
+enum ForgetPasswordWorkerError: LocalizedError {
+    case invalidEmail
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidEmail:
+            return "Invalid email."
+        }
+    }
 }
