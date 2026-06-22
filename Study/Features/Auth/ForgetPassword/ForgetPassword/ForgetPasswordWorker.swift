@@ -6,7 +6,7 @@
 import Foundation
 
 protocol ForgetPasswordWorkerProtocol {
-    func requestPasswordReset(email: String) async throws
+    func requestPasswordReset(email: Email) async throws
 }
 
 final class ForgetPasswordWorker: ForgetPasswordWorkerProtocol {
@@ -16,9 +16,7 @@ final class ForgetPasswordWorker: ForgetPasswordWorkerProtocol {
         self.service = service
     }
 
-    func requestPasswordReset(email: String) async throws {
-        let email = Email(value: email)
-
+    func requestPasswordReset(email: Email) async throws {
         guard email.isValid() else {
             throw ForgetPasswordWorkerError.invalidEmail
         }

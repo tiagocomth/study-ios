@@ -13,7 +13,7 @@ struct ForgetPasswordView: View {
             Text("Recuperar senha")
                 .font(.title)
 
-            TextField("Email", text: $viewModel.email)
+            TextField("Email", text: $viewModel.emailValue)
                 .textFieldStyle(.roundedBorder)
 
             if let errorMessage = viewModel.errorMessage {

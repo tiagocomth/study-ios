@@ -6,9 +6,9 @@
 import Foundation
 
 struct Email {
-    let value: String
+    var value: String
 
-    init(value: String) {
+    init(value: String = "") {
         self.value = value.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 

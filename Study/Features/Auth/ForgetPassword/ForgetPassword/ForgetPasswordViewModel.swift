@@ -9,9 +9,18 @@ import Combine
 final class ForgetPasswordViewModel: ObservableObject {
     weak var coordinator: ForgetPasswordCoordinatorProtocol?
     private let worker: ForgetPasswordWorkerProtocol
-    @Published var email: String = ""
+    private var email = Email()
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+
+    var emailValue: String {
+        get {
+            email.value
+        }
+        set {
+            updateEmailValue(newValue)
+        }
+    }
 
     init(worker: ForgetPasswordWorkerProtocol) {
         self.worker = worker
@@ -19,6 +28,8 @@ final class ForgetPasswordViewModel: ObservableObject {
 
     func recoverPassword() {
         guard !isLoading else { return }
+
+        let email = email
 
         isLoading = true
         errorMessage = nil
@@ -37,5 +48,11 @@ final class ForgetPasswordViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    private func updateEmailValue(_ value: String) {
+        objectWillChange.send()
+        email = Email(value: value)
+        errorMessage = nil
     }
 }
