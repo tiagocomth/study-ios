@@ -5,17 +5,35 @@
 
 import SwiftUI
 
-struct CodeView: View { // NOTE: Essa tela seria usada para o EmailValidation e ForgetPassword, como que vai saber para qual tela tem q mandar?
+struct CodeView: View {
     @StateObject var viewModel: CodeViewModel
 
     var body: some View {
         VStack {
-            Text("Code")
+            Text("Código")
                 .font(.title)
 
-            Button("New Password") {
-                viewModel.navigateToNewPassword()
+            TextField("Código", text: $viewModel.codeValue)
+                .textFieldStyle(.roundedBorder)
+
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
             }
+
+            Button {
+                viewModel.validateCode()
+            } label: {
+                if viewModel.isLoading {
+                    ProgressView()
+                } else {
+                    Text("Validar código")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!viewModel.canValidateCode || viewModel.isLoading)
         }
+        .padding()
     }
 }

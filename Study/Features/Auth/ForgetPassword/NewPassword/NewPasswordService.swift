@@ -9,5 +9,11 @@ protocol NewPasswordServiceProtocol {
 }
 
 final class NewPasswordService: NewPasswordServiceProtocol {
-    // TODO: chamadas de baixo nível
+    private let apiClient: APIClientProtocol
+
+    init(apiClient: APIClientProtocol) {
+        self.apiClient = apiClient
+    }
+
+    // TODO: chamadas de baixo nível usando a session recebida do worker no request de nova senha.
 }

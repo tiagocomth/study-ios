@@ -9,6 +9,7 @@ final class AuthFactory {
     
     weak var authCoordinator: AuthCoordinator?
     private let apiClient: APIClientProtocol
+    private let passwordResetSessionStore = PasswordResetSessionStore()
 
     init(apiClient: APIClientProtocol) {
         self.apiClient = apiClient
@@ -40,6 +41,7 @@ final class AuthFactory {
 extension AuthFactory {
     private func makeLoginVM() -> LoginViewModel {
         let viewModel = LoginViewModel(worker: LoginWorker(service: LoginService()))
+        
         viewModel.coordinator = authCoordinator
         return viewModel
     }
@@ -47,18 +49,25 @@ extension AuthFactory {
     private func makeForgotPasswordVM() -> ForgetPasswordViewModel {
         let service = ForgetPasswordService(apiClient: apiClient)
         let viewModel = ForgetPasswordViewModel(worker: ForgetPasswordWorker(service: service))
+        
         viewModel.coordinator = authCoordinator
         return viewModel
     }
     
     private func makeCodeVM() -> CodeViewModel {
-        let viewModel = CodeViewModel(worker: CodeWorker(service: CodeService()))
+        let service = CodeService(apiClient: apiClient)
+        let worker = CodeWorker(service: service, sessionStore: passwordResetSessionStore)
+        let viewModel = CodeViewModel(worker: worker)
+        
         viewModel.coordinator = authCoordinator
         return viewModel
     }
     
     private func makeNewPasswordVM() -> NewPasswordViewModel {
-        let viewModel = NewPasswordViewModel(worker: NewPasswordWorker(service: NewPasswordService()))
+        let service = NewPasswordService(apiClient: apiClient)
+        let worker = NewPasswordWorker(service: service,sessionStore: passwordResetSessionStore)
+        let viewModel = NewPasswordViewModel(worker: worker)
+        
         viewModel.coordinator = authCoordinator
         return viewModel
     }
