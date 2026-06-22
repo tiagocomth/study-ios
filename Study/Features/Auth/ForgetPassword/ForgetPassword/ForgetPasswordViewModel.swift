@@ -9,12 +9,50 @@ import Combine
 final class ForgetPasswordViewModel: ObservableObject {
     weak var coordinator: ForgetPasswordCoordinatorProtocol?
     private let worker: ForgetPasswordWorkerProtocol
+    private var email = Email()
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String?
+
+    var emailValue: String {
+        get {
+            email.value
+        }
+        set {
+            updateEmailValue(newValue)
+        }
+    }
 
     init(worker: ForgetPasswordWorkerProtocol) {
         self.worker = worker
     }
 
-    func navigateToCode() {
-        coordinator?.navigateToCode()
+    func recoverPassword() {
+        guard !isLoading else { return }
+
+        let email = email
+
+        isLoading = true
+        errorMessage = nil
+
+        Task {
+            do {
+                try await worker.requestPasswordReset(email: email)
+                await MainActor.run {
+                    isLoading = false
+                    coordinator?.navigateToCode()
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func updateEmailValue(_ value: String) {
+        objectWillChange.send()
+        email = Email(value: value)
+        errorMessage = nil
     }
 }

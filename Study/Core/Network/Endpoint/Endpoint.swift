@@ -25,3 +25,7 @@ protocol Endpoint {
     /// Optional additional HTTP headers specific to this endpoint.
     var headers: Headers? { get }
 }
+
+extension Endpoint {
+    var baseURL: String { "api.example.com" } // TODO: Replace with the real API host when the endpoint is available.
+}

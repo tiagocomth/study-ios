@@ -1,22 +1,19 @@
 //
-//  NewPasswordView.swift
+//  CodeView.swift
 //  Study
 //
 
 import SwiftUI
 
-struct NewPasswordView: View {
-    @StateObject var viewModel: NewPasswordViewModel
+struct CodeView: View {
+    @StateObject var viewModel: CodeViewModel
 
     var body: some View {
         VStack {
-            Text("Nova senha")
+            Text("Código")
                 .font(.title)
 
-            SecureField("Senha", text: $viewModel.passwordValue)
-                .textFieldStyle(.roundedBorder)
-
-            SecureField("Confirmar senha", text: $viewModel.passwordConfirmationValue)
+            TextField("Código", text: $viewModel.codeValue)
                 .textFieldStyle(.roundedBorder)
 
             if let errorMessage = viewModel.errorMessage {
@@ -26,16 +23,16 @@ struct NewPasswordView: View {
             }
 
             Button {
-                viewModel.updatePassword()
+                viewModel.validateCode()
             } label: {
                 if viewModel.isLoading {
                     ProgressView()
                 } else {
-                    Text("Alterar senha")
+                    Text("Validar código")
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(viewModel.isLoading)
+            .disabled(!viewModel.canValidateCode || viewModel.isLoading)
         }
         .padding()
     }

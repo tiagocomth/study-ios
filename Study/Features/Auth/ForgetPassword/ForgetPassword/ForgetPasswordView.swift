@@ -10,12 +10,30 @@ struct ForgetPasswordView: View {
 
     var body: some View {
         VStack {
-            Text("ForgetPassword")
+            Text("Recuperar senha")
                 .font(.title)
 
-            Button("Code") {
-                viewModel.navigateToCode()
+            TextField("Email", text: $viewModel.emailValue)
+                .textFieldStyle(.roundedBorder)
+
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
             }
+
+            Button {
+                viewModel.recoverPassword()
+            } label: {
+                if viewModel.isLoading {
+                    ProgressView()
+                } else {
+                    Text("Recuperar")
+                }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(viewModel.isLoading)
         }
+        .padding()
     }
 }
