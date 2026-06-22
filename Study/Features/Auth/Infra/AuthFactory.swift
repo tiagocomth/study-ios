@@ -8,6 +8,11 @@ import SwiftUI
 final class AuthFactory {
     
     weak var authCoordinator: AuthCoordinator?
+    private let apiClient: APIClientProtocol
+
+    init(apiClient: APIClientProtocol) {
+        self.apiClient = apiClient
+    }
     
     func makeLoginView() -> some View {
         let viewModel = makeLoginVM()
