@@ -6,6 +6,5 @@
 import Foundation
 
 nonisolated struct ResumeStudySessionDTO: Codable, Equatable, Sendable {
-    let sessionId: UUID
     let endedAt: Date
 }

@@ -100,7 +100,6 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
 
         return .paused(
             PauseStudySessionDTO(
-                sessionId: session.sessionId,
                 pauseId: pause.pauseId,
                 startedAt: pause.startedAt
             )
@@ -132,7 +131,6 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
 
         return .resumed(
             ResumeStudySessionDTO(
-                sessionId: session.sessionId,
                 endedAt: endedAt
             )
         )
@@ -155,7 +153,6 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
             
             session.pauses[pauseIndex].endedAt = endDate
             closePauseDTO = ResumeStudySessionDTO(
-                sessionId: session.sessionId,
                 endedAt: endDate
             )
         }
@@ -167,7 +164,6 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         logger.info("Finished study session \(session.sessionId.uuidString)")
 
         let endDTO = EndStudySessionDTO(
-            sessionId: session.sessionId,
             endDate: endDate
         )
 
