@@ -5,14 +5,15 @@
 
 import Foundation
 
+/// Guarda o OTP (token de reset) entre as telas do fluxo de recuperação de senha.
 final class PasswordResetSessionStore {
-    private(set) var session: String?
+    private(set) var otp: String?
 
-    func save(_ session: String) {
-        self.session = session
+    func save(_ otp: String) {
+        self.otp = otp
     }
 
     func clear() {
-        session = nil
+        otp = nil
     }
 }
