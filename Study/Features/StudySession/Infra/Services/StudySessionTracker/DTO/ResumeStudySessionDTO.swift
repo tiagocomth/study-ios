@@ -5,7 +5,7 @@
 
 import Foundation
 
-nonisolated struct ResumeStudySessionDTO: Equatable, Sendable {
+nonisolated struct ResumeStudySessionDTO: Codable, Equatable, Sendable {
     let sessionId: UUID
     let endedAt: Date
 }
