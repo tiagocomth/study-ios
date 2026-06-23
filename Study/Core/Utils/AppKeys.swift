@@ -10,4 +10,5 @@ import Foundation
 enum AppKeys: String {
     case userKey = "study_session_user"
     case userToken = "study_auth_token"
+    case activeStudySession = "study_active_session"
 }
