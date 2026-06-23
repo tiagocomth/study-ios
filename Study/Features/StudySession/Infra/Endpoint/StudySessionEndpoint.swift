@@ -6,18 +6,30 @@
 import Foundation
 
 enum StudySessionEndpoint: Endpoint {
+    case getStudySessions
+    case startStudySession(StartStudySessionDTO)
+    case pauseStudySession(id: UUID, dto: PauseStudySessionDTO)
+    case resumeStudySession(id: UUID, dto: ResumeStudySessionDTO)
+    case endStudySession(id: UUID, dto: EndStudySessionDTO)
+
     case getCategories
     case getCategoryById(String)
     case createCategory(CreateCategoryDTO)
     case updateCategory(id: String, dto: UpdateCategoryDTO)
     case deleteCategory(String)
 
-    var baseURL: String {
-        "study-app-production-b3da.up.railway.app"
-    }
-
     var path: String {
         switch self {
+        case .getStudySessions:
+            "/sessions"
+        case .startStudySession:
+            "/sessions/start"
+        case .pauseStudySession(let id, _):
+            "/sessions/\(id.uuidString)/pause"
+        case .resumeStudySession(let id, _):
+            "/sessions/\(id.uuidString)/resume"
+        case .endStudySession(let id, _):
+            "/sessions/\(id.uuidString)/end"
         case .getCategories, .createCategory:
             "/categories"
         case .getCategoryById(let id), .deleteCategory(let id):
@@ -29,11 +41,11 @@ enum StudySessionEndpoint: Endpoint {
 
     var method: HTTPMethod {
         switch self {
-        case .getCategories, .getCategoryById:
+        case .getStudySessions, .getCategories, .getCategoryById:
             .get
-        case .createCategory:
+        case .startStudySession, .pauseStudySession, .createCategory:
             .post
-        case .updateCategory:
+        case .resumeStudySession, .endStudySession, .updateCategory:
             .patch
         case .deleteCategory:
             .delete
@@ -42,8 +54,16 @@ enum StudySessionEndpoint: Endpoint {
 
     var task: HTTPTask {
         switch self {
-        case .getCategories, .getCategoryById, .deleteCategory:
+        case .getStudySessions, .getCategories, .getCategoryById, .deleteCategory:
             .requestPlain
+        case .startStudySession(let dto):
+            .requestJSONBody(dto)
+        case .pauseStudySession(_, let dto):
+            .requestJSONBody(dto)
+        case .resumeStudySession(_, let dto):
+            .requestJSONBody(dto)
+        case .endStudySession(_, let dto):
+            .requestJSONBody(dto)
         case .createCategory(let dto):
             .requestJSONBody(dto)
         case .updateCategory(_, let dto):
