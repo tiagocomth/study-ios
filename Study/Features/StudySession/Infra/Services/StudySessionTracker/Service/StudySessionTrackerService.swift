@@ -45,7 +45,7 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         logger.info("Restored active study session")
     }
 
-    func start(categoryId: String?) async throws(StudySessionTrackerError) -> StudySessionTrackerAction {
+    func start(categoryId: String) async throws(StudySessionTrackerError) -> StudySessionTrackerAction {
         if let activeSession, activeSession.state != .finished {
             logger.error("Failed to start study session: active session already exists")
             throw StudySessionTrackerError.activeSessionAlreadyExists

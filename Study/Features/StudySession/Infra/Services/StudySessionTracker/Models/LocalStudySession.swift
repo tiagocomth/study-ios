@@ -7,7 +7,7 @@ import Foundation
 
 nonisolated struct LocalStudySession: Codable, Equatable, Sendable {
     let sessionId: UUID
-    let categoryId: String?
+    let categoryId: String
     let startDate: Date
     var endDate: Date?
     var state: StudySessionState
