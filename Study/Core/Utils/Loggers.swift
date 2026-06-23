@@ -51,6 +51,10 @@ final class PaymentLogger: DomainLogger, @unchecked Sendable {
     init() { super.init(category: "Payment") }
 }
 
+final class CategoryLogger: DomainLogger, @unchecked Sendable {
+    init() { super.init(category: "Category") }
+}
+
 final class StudySessionTrackerLogger: DomainLogger, @unchecked Sendable {
     init() { super.init(category: "StudySessionTracker") }
 }
