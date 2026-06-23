@@ -5,6 +5,9 @@
 ## User settings
 xcuserdata/
 
+## Local config (API host etc.) — não versionado
+Study/Core/Constants/Config.xcconfig
+
 ## Obj-C/Swift specific
 *.hmap
 

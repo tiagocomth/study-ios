@@ -1,0 +1,13 @@
+//
+//  Config.xcconfig.example
+//  Study
+//
+//  Template versionado da configuração local. Copie este arquivo para
+//  `Config.xcconfig` (mesma pasta) e preencha os valores reais.
+//  O `Config.xcconfig` é ignorado pelo git (ver .gitignore).
+//
+//  Configuration settings file format documentation can be found at:
+//  https://developer.apple.com/documentation/xcode/adding-a-build-configuration-file-to-your-project
+
+// Host da API (sem scheme e sem path — o RequestBuilder adiciona https://).
+API_BASE_URL = your-api-host.example.com

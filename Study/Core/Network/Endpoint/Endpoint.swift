@@ -27,5 +27,6 @@ protocol Endpoint {
 }
 
 extension Endpoint {
-    var baseURL: String { "api.example.com" } // TODO: Replace with the real API host when the endpoint is available.
+    /// Default host, read from `Config.xcconfig` via the Info.plist (`API_BASE_URL`).
+    var baseURL: String { APIConstants.host }
 }
