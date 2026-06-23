@@ -11,26 +11,31 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
     private let userDefaults: UserDefaults
     private let key: String
     private let now: @Sendable () -> Date
+    private let logger: DomainLogging
 
     init(
         userDefaults: UserDefaults = .standard,
         key: String = AppKeys.pendingOfflineOperations.rawValue,
-        now: @escaping @Sendable () -> Date = { Date() }
+        now: @escaping @Sendable () -> Date = { Date() },
+        logger: DomainLogging = OfflineOperationQueueLogger()
     ) {
         self.userDefaults = userDefaults
         self.key = key
         self.now = now
+        self.logger = logger
     }
 
     func restore() async {
         guard let data = userDefaults.data(forKey: key) else {
             pendingOperations = []
+            logger.debug("No pending offline operations found to restore")
             return
         }
 
         pendingOperations = await MainActor.run {
             (try? JSONDecoder().decode([PendingOfflineOperation].self, from: data)) ?? []
         }
+        logger.info("Restored \(pendingOperations.count) pending offline operations")
     }
 
     func enqueue(_ operation: PendingOfflineOperation) async throws(OfflineOperationQueueError) {
@@ -39,6 +44,7 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
 
         try await persist(updatedOperations)
         pendingOperations = updatedOperations
+        logger.info("Enqueued offline operation \(operation.id.uuidString)")
     }
 
     func enqueue(_ operations: [PendingOfflineOperation]) async throws(OfflineOperationQueueError) {
@@ -49,6 +55,7 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
 
         try await persist(updatedOperations)
         pendingOperations = updatedOperations
+        logger.info("Enqueued \(operations.count) offline operations")
     }
 
     func peek() -> PendingOfflineOperation? {
@@ -67,6 +74,7 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
 
         try await persist(updatedOperations)
         pendingOperations = updatedOperations
+        logger.info("Marked first offline operation \(id.uuidString) as succeeded")
     }
 
     func markFirstFailed(_ id: UUID) async throws(OfflineOperationQueueError) {
@@ -78,14 +86,17 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
 
         try await persist(updatedOperations)
         pendingOperations = updatedOperations
+        logger.info("Marked first offline operation \(id.uuidString) as failed")
     }
 
     private func validateFirstOperation(_ id: UUID) throws(OfflineOperationQueueError) {
         guard let firstOperation = pendingOperations.first else {
+            logger.error("Failed to update offline operation \(id.uuidString): queue is empty")
             throw OfflineOperationQueueError.queueIsEmpty
         }
 
         guard firstOperation.id == id else {
+            logger.error("Failed to update offline operation \(id.uuidString): operation is not first")
             throw OfflineOperationQueueError.operationIsNotFirst
         }
     }
@@ -97,6 +108,7 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
             }
             userDefaults.set(data, forKey: key)
         } catch {
+            logger.error("Failed to persist offline operations: \(error.localizedDescription)")
             throw OfflineOperationQueueError.failedToPersistOperations
         }
     }

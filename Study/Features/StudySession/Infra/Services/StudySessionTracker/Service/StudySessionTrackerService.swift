@@ -12,17 +12,20 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
     private let key: String
     private let now: @Sendable () -> Date
     private let makeId: @Sendable () -> UUID
+    private let logger: DomainLogging
 
     init(
         userDefaults: UserDefaults = .standard,
         key: String = AppKeys.activeStudySession.rawValue,
         now: @escaping @Sendable () -> Date = { Date() },
-        makeId: @escaping @Sendable () -> UUID = { UUID() }
+        makeId: @escaping @Sendable () -> UUID = { UUID() },
+        logger: DomainLogging = StudySessionTrackerLogger()
     ) {
         self.userDefaults = userDefaults
         self.key = key
         self.now = now
         self.makeId = makeId
+        self.logger = logger
     }
 
     func getActiveSession() -> LocalStudySession? {
@@ -32,16 +35,19 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
     func restore() async {
         guard let data = userDefaults.data(forKey: key) else {
             activeSession = nil
+            logger.debug("No active study session found to restore")
             return
         }
 
         activeSession = await MainActor.run {
             try? JSONDecoder().decode(LocalStudySession.self, from: data)
         }
+        logger.info("Restored active study session")
     }
 
     func start(categoryId: String?) async throws(StudySessionTrackerError) -> StudySessionTrackerAction {
         if let activeSession, activeSession.state != .finished {
+            logger.error("Failed to start study session: active session already exists")
             throw StudySessionTrackerError.activeSessionAlreadyExists
         }
 
@@ -55,6 +61,7 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         )
 
         try await persist(session)
+        logger.info("Started study session \(session.sessionId.uuidString)")
 
         return .started(
             StartStudySessionDTO(
@@ -72,8 +79,10 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         case .running:
             break
         case .paused:
+            logger.error("Failed to pause study session: session is already paused")
             throw StudySessionTrackerError.sessionAlreadyPaused
         case .finished:
+            logger.error("Failed to pause study session: session is already finished")
             throw StudySessionTrackerError.sessionAlreadyFinished
         }
 
@@ -87,6 +96,7 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         session.state = .paused
 
         try await persist(session)
+        logger.info("Paused study session \(session.sessionId.uuidString) with pause \(pause.pauseId.uuidString)")
 
         return .paused(
             PauseStudySessionDTO(
@@ -102,10 +112,12 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
 
         switch session.state {
         case .running:
+            logger.error("Failed to resume study session: session is not paused")
             throw StudySessionTrackerError.sessionIsNotPaused
         case .paused:
             break
         case .finished:
+            logger.error("Failed to resume study session: session is already finished")
             throw StudySessionTrackerError.sessionAlreadyFinished
         }
 
@@ -116,6 +128,7 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         session.state = .running
 
         try await persist(session)
+        logger.info("Resumed study session \(session.sessionId.uuidString)")
 
         return .resumed(
             ResumeStudySessionDTO(
@@ -129,6 +142,7 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         var session = try requireActiveSession()
 
         guard session.state != .finished else {
+            logger.error("Failed to finish study session: session is already finished")
             throw StudySessionTrackerError.sessionAlreadyFinished
         }
 
@@ -150,6 +164,7 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         session.state = .finished
 
         try await persist(session)
+        logger.info("Finished study session \(session.sessionId.uuidString)")
 
         let endDTO = EndStudySessionDTO(
             sessionId: session.sessionId,
@@ -166,10 +181,12 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
     func clear() {
         userDefaults.removeObject(forKey: key)
         activeSession = nil
+        logger.info("Cleared active study session")
     }
 
     private func requireActiveSession() throws(StudySessionTrackerError) -> LocalStudySession {
         guard let activeSession else {
+            logger.error("Failed to read active study session: session not found")
             throw StudySessionTrackerError.sessionNotFound
         }
 
@@ -180,14 +197,17 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         let openIndexes = session.pauses.indices.filter { session.pauses[$0].endedAt == nil }
 
         guard let openIndex = openIndexes.first else {
+            logger.error("Failed to find open pause for study session \(session.sessionId.uuidString)")
             throw StudySessionTrackerError.pauseNotFound
         }
 
         guard openIndexes.count == 1 else {
+            logger.error("Found multiple open pauses for study session \(session.sessionId.uuidString)")
             throw StudySessionTrackerError.multipleOpenPausesFound
         }
 
         guard openIndex == session.pauses.indices.last else {
+            logger.error("Open pause is not latest for study session \(session.sessionId.uuidString)")
             throw StudySessionTrackerError.openPauseIsNotLatest
         }
 
@@ -202,6 +222,7 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
             userDefaults.set(data, forKey: key)
             activeSession = session
         } catch {
+            logger.error("Failed to persist study session \(session.sessionId.uuidString): \(error.localizedDescription)")
             throw StudySessionTrackerError.failedToPersistSession
         }
     }
