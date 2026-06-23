@@ -6,6 +6,7 @@
 import Foundation
 
 protocol RegisterWorkerProtocol {
+    func register(name: String, email: Email, password: Password, confirmation: Password) async throws
 }
 
 final class RegisterWorker: RegisterWorkerProtocol {
@@ -15,5 +16,40 @@ final class RegisterWorker: RegisterWorkerProtocol {
         self.service = service
     }
 
-    // TODO: ações
+    func register(name: String, email: Email, password: Password, confirmation: Password) async throws {
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw RegisterWorkerError.missingName
+        }
+        guard email.isValid() else {
+            throw RegisterWorkerError.invalidEmail
+        }
+        guard password.isValid() else {
+            throw RegisterWorkerError.invalidPassword
+        }
+        guard password == confirmation else {
+            throw RegisterWorkerError.passwordsDoNotMatch
+        }
+
+        try await service.register(name: name, email: email, password: password)
+    }
+}
+
+enum RegisterWorkerError: LocalizedError {
+    case missingName
+    case invalidEmail
+    case invalidPassword
+    case passwordsDoNotMatch
+
+    var errorDescription: String? {
+        switch self {
+        case .missingName:
+            return "Name is required."
+        case .invalidEmail:
+            return "Invalid email."
+        case .invalidPassword:
+            return "Password must be at least 8 characters."
+        case .passwordsDoNotMatch:
+            return "Passwords do not match."
+        }
+    }
 }
