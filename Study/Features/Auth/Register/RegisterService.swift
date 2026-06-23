@@ -19,10 +19,9 @@ final class RegisterService: RegisterServiceProtocol {
 
     func register(name: String, email: Email, password: Password) async throws(NetworkError) {
         // A API de cadastro aceita apenas email + senha.
-        // TODO: `name` ainda não é enviado — quando necessário, gravar via PATCH /users/me.
         let dto = RegisterRequestDTO(email: email.value, password: password.value)
-        // O endpoint devolve `{ accessToken, user }` (loga direto), mas aqui a sessão
-        // só é iniciada na etapa de validação de e-mail (verify), então o token é descartado.
-        let _: AuthResponseDTO = try await apiClient.request(AuthEndpoint.register(dto))
+        // POST /auth/register devolve apenas `{ message }` (201) e dispara o envio do
+        // código por e-mail. A sessão só é iniciada na etapa de validação (verify).
+        let _: EmptyResponse = try await apiClient.request(AuthEndpoint.register(dto))
     }
 }

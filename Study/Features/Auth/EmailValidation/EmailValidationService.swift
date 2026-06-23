@@ -21,24 +21,14 @@ final class EmailValidationService: EmailValidationServiceProtocol {
     }
 
     func validate(email: Email, code: String) async throws -> AuthResponse {
-        // STUB: o endpoint de validação de e-mail ainda não existe no backend.
-        // Quando subir (padrão do forgot-password/verify, devolvendo `{ accessToken, user }`),
-        // basta remover o stub e descomentar:
-        //
-        // let dto = VerifyEmailValidationRequestDTO(email: email.value, otp: code)
-        // let response: AuthResponseDTO = try await apiClient.request(AuthEndpoint.verifyEmailValidation(dto))
-        // return response.toDomain()
-        return AuthResponse(
-            user: User(id: UUID().uuidString, name: email.value, photo: nil, individualHoursTotal: 0, groupHoursTotal: 0),
-            token: "mock-token"
-        )
+        // POST /auth/register/verify — confirma o OTP e devolve `{ accessToken, user }`.
+        let dto = VerifyEmailValidationRequestDTO(email: email.value, otp: code)
+        let response: AuthResponseDTO = try await apiClient.request(AuthEndpoint.verifyEmailValidation(dto))
+        return response.toDomain()
     }
 
     func resendCode(email: Email) async throws {
-        // STUB: o endpoint de envio do código ainda não existe no backend.
-        // Quando subir (padrão do forgot-password, body `{ email }`), descomentar:
-        //
-        // let dto = SendEmailValidationRequestDTO(email: email.value)
-        // let _: EmptyResponse = try await apiClient.request(AuthEndpoint.sendEmailValidation(dto))
+        // O código é enviado pelo próprio POST /auth/register; o backend ainda não
+        // expõe um endpoint dedicado de reenvio. Quando expuser, ligar aqui.
     }
 }

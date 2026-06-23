@@ -20,14 +20,8 @@ struct RegisterRequestDTO: Encodable {
     let password: String
 }
 
-/// Dispara o envio do código de validação de e-mail.
-/// Segue o padrão do `forgot-password` (body só com o e-mail).
-struct SendEmailValidationRequestDTO: Encodable {
-    let email: String
-}
-
-/// Confirma o código de validação de e-mail.
-/// Segue o padrão do `forgot-password/verify` (`email` + `otp`).
+/// Confirma o código de validação de e-mail do cadastro.
+/// `POST /auth/register/verify` — body `email` + `otp`.
 struct VerifyEmailValidationRequestDTO: Encodable {
     let email: String
     let otp: String
