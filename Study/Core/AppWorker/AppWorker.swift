@@ -43,7 +43,7 @@ final class AppWorker {
     }
 
     func makeAuthCoordinator() -> AuthCoordinator {
-        return appCoordinator.makeAuthCoordinator(apiClient: apiClient)
+        return appCoordinator.makeAuthCoordinator(apiClient: apiClient, session: userSessionService)
     }
 
 }
