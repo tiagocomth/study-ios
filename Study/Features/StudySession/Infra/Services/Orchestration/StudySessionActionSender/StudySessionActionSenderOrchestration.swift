@@ -1,19 +1,19 @@
 //
-//  StudySessionActionSenderService.swift
+//  StudySessionActionSenderOrchestration.swift
 //  Study
 //
 
 import Foundation
 
-final class StudySessionActionSenderService: StudySessionActionSenderServiceProtocol { // TODO: Mudar o nome, colocando orchestration
-    private let offlineOperationSender: OfflineOperationSenderServiceProtocol
-    private let offlineOperationQueue: OfflineOperationQueueServiceProtocol
+final class StudySessionActionSenderOrchestration: StudySessionActionSenderOrchestrationProtocol {
+    private let offlineOperationSender: OfflineOperationSenderRemoteProtocol
+    private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
     private let makeId: @Sendable () -> UUID
     private let now: @Sendable () -> Date
 
     init(
-        offlineOperationSender: OfflineOperationSenderServiceProtocol,
-        offlineOperationQueue: OfflineOperationQueueServiceProtocol,
+        offlineOperationSender: OfflineOperationSenderRemoteProtocol,
+        offlineOperationQueue: OfflineOperationQueueLocalProtocol,
         makeId: @escaping @Sendable () -> UUID = { UUID() },
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
@@ -28,7 +28,7 @@ final class StudySessionActionSenderService: StudySessionActionSenderServiceProt
     }
 }
 
-private extension StudySessionActionSenderService {
+private extension StudySessionActionSenderOrchestration {
     func makeOperations(for action: StudySessionTrackerAction) -> [PendingOfflineOperation] {
         switch action {
         case .started(let dto):

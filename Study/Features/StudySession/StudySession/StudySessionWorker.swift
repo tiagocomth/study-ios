@@ -6,22 +6,22 @@
 import Foundation
 
 final class StudySessionWorker: StudySessionWorkerProtocol {
-    private let categoryService: CategoryServiceProtocol
-    private let categoryLocalStore: CategoryLocalStoreServiceProtocol
-    private let studySessionTracker: StudySessionTrackerServiceProtocol
-    private let offlineOperationQueue: OfflineOperationQueueServiceProtocol
-    private let studySessionActionSender: StudySessionActionSenderServiceProtocol
+    private let categoryService: CategoryRemoteProtocol
+    private let categoryLocalStore: CategoryStoreLocalProtocol
+    private let studySessionTracker: StudySessionTrackerLocalProtocol
+    private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
+    private let studySessionActionSender: StudySessionActionSenderOrchestrationProtocol
     private let currentUserId: @Sendable () -> UUID?
     private let makeId: @Sendable () -> UUID
     private let now: @Sendable () -> Date
     private var tasks: [Task<Void, Never>] = []
     
     init(
-        categoryService: CategoryServiceProtocol,
-        categoryLocalStore: CategoryLocalStoreServiceProtocol,
-        studySessionTracker: StudySessionTrackerServiceProtocol,
-        offlineOperationQueue: OfflineOperationQueueServiceProtocol,
-        studySessionActionSender: StudySessionActionSenderServiceProtocol,
+        categoryService: CategoryRemoteProtocol,
+        categoryLocalStore: CategoryStoreLocalProtocol,
+        studySessionTracker: StudySessionTrackerLocalProtocol,
+        offlineOperationQueue: OfflineOperationQueueLocalProtocol,
+        studySessionActionSender: StudySessionActionSenderOrchestrationProtocol,
         currentUserId: @escaping @Sendable () -> UUID?,
         makeId: @escaping @Sendable () -> UUID = { UUID() },
         now: @escaping @Sendable () -> Date = { Date() }

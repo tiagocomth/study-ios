@@ -1,11 +1,11 @@
 //
-//  StudySessionRemoteServiceProtocol.swift
+//  StudySessionRemoteProtocol.swift
 //  Study
 //
 
 import Foundation
 
-nonisolated protocol StudySessionRemoteServiceProtocol {
+nonisolated protocol StudySessionRemoteProtocol {
     func start(_ dto: StartStudySessionDTO) async throws(NetworkError)
     func pause(id: UUID, dto: PauseStudySessionDTO) async throws(NetworkError)
     func resume(id: UUID, dto: ResumeStudySessionDTO) async throws(NetworkError)

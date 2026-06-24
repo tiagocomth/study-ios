@@ -1,10 +1,10 @@
 //
-//  BlockService.swift
+//  BlockOrchestration.swift
 //  Study
 //
 
 import Foundation
 
-final class BlockService {
+final class BlockOrchestration {
     // TODO: bloquear / liberar telas durante a sessão
 }

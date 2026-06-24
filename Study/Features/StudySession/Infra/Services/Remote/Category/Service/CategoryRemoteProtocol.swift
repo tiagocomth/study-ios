@@ -1,11 +1,11 @@
 //
-//  CategoryServiceProtocol.swift
+//  CategoryRemoteProtocol.swift
 //  Study
 //
 
 import Foundation
 
-nonisolated protocol CategoryServiceProtocol {
+nonisolated protocol CategoryRemoteProtocol {
     func getAll() async throws(NetworkError) -> [StudyCategory]
     func getById(_ id: UUID) async throws(NetworkError) -> StudyCategory
     func create(_ dto: CreateCategoryDTO) async throws(NetworkError)

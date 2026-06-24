@@ -1,11 +1,11 @@
 //
-//  OfflineOperationQueueError.swift
+//  OfflineOperationQueueLocalError.swift
 //  Study
 //
 
 import Foundation
 
-nonisolated enum OfflineOperationQueueError: LocalizedError, Equatable, Sendable {
+nonisolated enum OfflineOperationQueueLocalError: LocalizedError, Equatable, Sendable {
     case queueIsEmpty
     case operationIsNotFirst
     case failedToPersistOperations

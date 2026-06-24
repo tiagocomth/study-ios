@@ -1,5 +1,5 @@
 //
-//  CategoryLocalStoreService.swift
+//  CategoryStoreLocal.swift
 //  Study
 //
 
@@ -7,7 +7,7 @@ import Foundation
 import SwiftData
 
 @MainActor
-final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
+final class CategoryStoreLocal: CategoryStoreLocalProtocol {
     private let context: ModelContext
     private let logger: DomainLogging
 
@@ -19,47 +19,47 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
         self.logger = logger
     }
 
-    func getAll() throws(CategoryLocalStoreError) -> [StudyCategory] {
+    func getAll() throws(CategoryStoreLocalError) -> [StudyCategory] {
         do {
             return try fetchAllStoredCategories().map { $0.toStudyCategory() }
         } catch {
             logger.error("Failed to fetch local categories")
-            throw CategoryLocalStoreError.failedToFetchCategories
+            throw CategoryStoreLocalError.failedToFetchCategories
         }
     }
 
-    func getById(_ id: UUID) throws(CategoryLocalStoreError) -> StudyCategory? {
+    func getById(_ id: UUID) throws(CategoryStoreLocalError) -> StudyCategory? {
         do {
             return try fetchStoredCategory(id: id)?.toStudyCategory()
         } catch {
             logger.error("Failed to fetch local category \(id.uuidString)")
-            throw CategoryLocalStoreError.failedToFetchCategories
+            throw CategoryStoreLocalError.failedToFetchCategories
         }
     }
 
-    func saveAll(_ categories: [StudyCategory]) throws(CategoryLocalStoreError) {
+    func saveAll(_ categories: [StudyCategory]) throws(CategoryStoreLocalError) {
         do {
             try categories.forEach { try saveCategory($0) }
             try context.save()
             logger.info("Saved \(categories.count) local categories")
         } catch {
             logger.error("Failed to save local categories")
-            throw CategoryLocalStoreError.failedToSaveCategory
+            throw CategoryStoreLocalError.failedToSaveCategory
         }
     }
 
-    func save(_ category: StudyCategory) throws(CategoryLocalStoreError) {
+    func save(_ category: StudyCategory) throws(CategoryStoreLocalError) {
         do {
             try saveCategory(category)
             try context.save()
             logger.info("Saved local category \(category.categoryId.uuidString)")
         } catch {
             logger.error("Failed to save local category \(category.categoryId.uuidString)")
-            throw CategoryLocalStoreError.failedToSaveCategory
+            throw CategoryStoreLocalError.failedToSaveCategory
         }
     }
 
-    func delete(id: UUID) throws(CategoryLocalStoreError) {
+    func delete(id: UUID) throws(CategoryStoreLocalError) {
         do {
             if let category = try fetchStoredCategory(id: id) {
                 context.delete(category)
@@ -68,11 +68,11 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
             logger.info("Deleted local category \(id.uuidString)")
         } catch {
             logger.error("Failed to delete local category \(id.uuidString)")
-            throw CategoryLocalStoreError.failedToDeleteCategory
+            throw CategoryStoreLocalError.failedToDeleteCategory
         }
     }
 
-    func rollbackCreate(id: UUID) throws(CategoryLocalStoreError) {
+    func rollbackCreate(id: UUID) throws(CategoryStoreLocalError) {
         do {
             if let category = try fetchStoredCategory(id: id) {
                 context.delete(category)
@@ -81,34 +81,34 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
             logger.info("Rolled back local category create \(id.uuidString)")
         } catch {
             logger.error("Failed to rollback local category create \(id.uuidString)")
-            throw CategoryLocalStoreError.failedToRollbackCategory
+            throw CategoryStoreLocalError.failedToRollbackCategory
         }
     }
 
-    func rollbackUpdate(previousCategory: StudyCategory) throws(CategoryLocalStoreError) {
+    func rollbackUpdate(previousCategory: StudyCategory) throws(CategoryStoreLocalError) {
         do {
             try saveCategory(previousCategory)
             try context.save()
             logger.info("Rolled back local category update \(previousCategory.categoryId.uuidString)")
         } catch {
             logger.error("Failed to rollback local category update \(previousCategory.categoryId.uuidString)")
-            throw CategoryLocalStoreError.failedToRollbackCategory
+            throw CategoryStoreLocalError.failedToRollbackCategory
         }
     }
 
-    func rollbackDelete(deletedCategory: StudyCategory) throws(CategoryLocalStoreError) {
+    func rollbackDelete(deletedCategory: StudyCategory) throws(CategoryStoreLocalError) {
         do {
             try saveCategory(deletedCategory)
             try context.save()
             logger.info("Rolled back local category delete \(deletedCategory.categoryId.uuidString)")
         } catch {
             logger.error("Failed to rollback local category delete \(deletedCategory.categoryId.uuidString)")
-            throw CategoryLocalStoreError.failedToRollbackCategory
+            throw CategoryStoreLocalError.failedToRollbackCategory
         }
     }
 }
 
-private extension CategoryLocalStoreService {
+private extension CategoryStoreLocal {
     func fetchAllStoredCategories() throws -> [StoredStudyCategory] {
         let descriptor = FetchDescriptor<StoredStudyCategory>(
             sortBy: [SortDescriptor(\.createdAt)]

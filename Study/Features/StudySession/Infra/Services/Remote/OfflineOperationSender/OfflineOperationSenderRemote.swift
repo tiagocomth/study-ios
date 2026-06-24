@@ -1,18 +1,18 @@
 //
-//  OfflineOperationSenderService.swift
+//  OfflineOperationSenderRemote.swift
 //  Study
 //
 
 import Foundation
 
-final class OfflineOperationSenderService: OfflineOperationSenderServiceProtocol {
-    private let studySessionRemoteService: StudySessionRemoteServiceProtocol
-    private let categoryService: CategoryServiceProtocol
+final class OfflineOperationSenderRemote: OfflineOperationSenderRemoteProtocol {
+    private let studySessionRemoteService: StudySessionRemoteProtocol
+    private let categoryService: CategoryRemoteProtocol
     private let logger: DomainLogging
 
     init(
-        studySessionRemoteService: StudySessionRemoteServiceProtocol,
-        categoryService: CategoryServiceProtocol,
+        studySessionRemoteService: StudySessionRemoteProtocol,
+        categoryService: CategoryRemoteProtocol,
         logger: DomainLogging = OfflineOperationQueueLogger()
     ) {
         self.studySessionRemoteService = studySessionRemoteService

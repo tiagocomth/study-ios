@@ -1,11 +1,11 @@
 //
-//  StudySessionRemoteService.swift
+//  StudySessionRemote.swift
 //  Study
 //
 
 import Foundation
 
-final class StudySessionRemoteService: StudySessionRemoteServiceProtocol {
+final class StudySessionRemote: StudySessionRemoteProtocol {
     private let apiClient: APIClientProtocol
     private let logger: DomainLogging
 

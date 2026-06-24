@@ -1,11 +1,11 @@
 //
-//  OfflineOperationQueueService.swift
+//  OfflineOperationQueueLocal.swift
 //  Study
 //
 
 import Foundation
 
-actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
+actor OfflineOperationQueueLocal: OfflineOperationQueueLocalProtocol {
     private var pendingOperations: [PendingOfflineOperation] = []
 
     private let userDefaults: UserDefaults
@@ -38,7 +38,7 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
         logger.info("Restored \(pendingOperations.count) pending offline operations")
     }
 
-    func enqueue(_ operation: PendingOfflineOperation) async throws(OfflineOperationQueueError) {
+    func enqueue(_ operation: PendingOfflineOperation) async throws(OfflineOperationQueueLocalError) {
         var updatedOperations = pendingOperations
         updatedOperations.append(operation)
 
@@ -47,7 +47,7 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
         logger.info("Enqueued offline operation \(operation.id.uuidString)")
     }
 
-    func enqueue(_ operations: [PendingOfflineOperation]) async throws(OfflineOperationQueueError) {
+    func enqueue(_ operations: [PendingOfflineOperation]) async throws(OfflineOperationQueueLocalError) {
         guard !operations.isEmpty else { return }
 
         var updatedOperations = pendingOperations
@@ -66,7 +66,7 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
         pendingOperations
     }
 
-    func markFirstSucceeded(_ id: UUID) async throws(OfflineOperationQueueError) {
+    func markFirstSucceeded(_ id: UUID) async throws(OfflineOperationQueueLocalError) {
         try validateFirstOperation(id)
 
         var updatedOperations = pendingOperations
@@ -77,7 +77,7 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
         logger.info("Marked first offline operation \(id.uuidString) as succeeded")
     }
 
-    func markFirstFailed(_ id: UUID) async throws(OfflineOperationQueueError) {
+    func markFirstFailed(_ id: UUID) async throws(OfflineOperationQueueLocalError) {
         try validateFirstOperation(id)
 
         var updatedOperations = pendingOperations
@@ -89,19 +89,19 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
         logger.info("Marked first offline operation \(id.uuidString) as failed")
     }
 
-    private func validateFirstOperation(_ id: UUID) throws(OfflineOperationQueueError) {
+    private func validateFirstOperation(_ id: UUID) throws(OfflineOperationQueueLocalError) {
         guard let firstOperation = pendingOperations.first else {
             logger.error("Failed to update offline operation \(id.uuidString): queue is empty")
-            throw OfflineOperationQueueError.queueIsEmpty
+            throw OfflineOperationQueueLocalError.queueIsEmpty
         }
 
         guard firstOperation.id == id else {
             logger.error("Failed to update offline operation \(id.uuidString): operation is not first")
-            throw OfflineOperationQueueError.operationIsNotFirst
+            throw OfflineOperationQueueLocalError.operationIsNotFirst
         }
     }
 
-    private func persist(_ operations: [PendingOfflineOperation]) async throws(OfflineOperationQueueError) {
+    private func persist(_ operations: [PendingOfflineOperation]) async throws(OfflineOperationQueueLocalError) {
         do {
             let data = try await MainActor.run {
                 try JSONEncoder().encode(operations)
@@ -109,7 +109,7 @@ actor OfflineOperationQueueService: OfflineOperationQueueServiceProtocol {
             userDefaults.set(data, forKey: key)
         } catch {
             logger.error("Failed to persist offline operations: \(error.localizedDescription)")
-            throw OfflineOperationQueueError.failedToPersistOperations
+            throw OfflineOperationQueueLocalError.failedToPersistOperations
         }
     }
 }

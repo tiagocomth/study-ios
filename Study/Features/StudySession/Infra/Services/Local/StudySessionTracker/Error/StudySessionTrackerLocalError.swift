@@ -1,11 +1,11 @@
 //
-//  StudySessionTrackerError.swift
+//  StudySessionTrackerLocalError.swift
 //  Study
 //
 
 import Foundation
 
-nonisolated enum StudySessionTrackerError: LocalizedError, Equatable, Sendable {
+nonisolated enum StudySessionTrackerLocalError: LocalizedError, Equatable, Sendable {
     case activeSessionAlreadyExists
     case sessionNotFound
     case sessionAlreadyPaused

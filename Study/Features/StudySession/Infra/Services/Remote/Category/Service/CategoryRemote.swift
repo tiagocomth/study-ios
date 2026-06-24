@@ -1,11 +1,11 @@
 //
-//  CategoryService.swift
+//  CategoryRemote.swift
 //  Study
 //
 
 import Foundation
 
-final class CategoryService: CategoryServiceProtocol { // TODO: Mudar o nome para remote
+final class CategoryRemote: CategoryRemoteProtocol {
     private let apiClient: APIClientProtocol
     private let logger: DomainLogging
 

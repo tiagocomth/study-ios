@@ -1,11 +1,11 @@
 //
-//  CategoryLocalStoreError.swift
+//  CategoryStoreLocalError.swift
 //  Study
 //
 
 import Foundation
 
-nonisolated enum CategoryLocalStoreError: LocalizedError, Equatable, Sendable {
+nonisolated enum CategoryStoreLocalError: LocalizedError, Equatable, Sendable {
     case failedToFetchCategories
     case failedToSaveCategory
     case failedToDeleteCategory
