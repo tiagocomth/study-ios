@@ -9,7 +9,7 @@ nonisolated enum CategoryLocalStoreError: LocalizedError, Equatable, Sendable {
     case failedToFetchCategories
     case failedToSaveCategory
     case failedToDeleteCategory
-    case failedToReplaceCategories
+    case failedToRollbackCategory
 
     var errorDescription: String? {
         switch self {
@@ -19,8 +19,8 @@ nonisolated enum CategoryLocalStoreError: LocalizedError, Equatable, Sendable {
             "Failed to save local category."
         case .failedToDeleteCategory:
             "Failed to delete local category."
-        case .failedToReplaceCategories:
-            "Failed to replace local categories."
+        case .failedToRollbackCategory:
+            "Failed to rollback local category."
         }
     }
 }

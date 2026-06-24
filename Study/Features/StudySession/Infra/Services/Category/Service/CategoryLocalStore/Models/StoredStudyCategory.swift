@@ -1,5 +1,5 @@
 //
-//  LocalStudyCategory.swift
+//  StoredStudyCategory.swift
 //  Study
 //
 
@@ -7,7 +7,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class LocalStudyCategory {
+final class StoredStudyCategory {
     @Attribute(.unique) var categoryId: UUID
     var userId: UUID
     var name: String
