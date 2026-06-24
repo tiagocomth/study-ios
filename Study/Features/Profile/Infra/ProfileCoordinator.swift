@@ -6,6 +6,8 @@
 import SwiftUI
 
 final class ProfileCoordinator {
+    
+    var navigationController: NavigationController = .init()
     private let factory: ProfileFactory
 
     init(factory: ProfileFactory) {
