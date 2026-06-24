@@ -7,8 +7,8 @@ import Foundation
 
 nonisolated enum StudySessionTrackerAction: Equatable, Sendable {
     case started(StartStudySessionDTO)
-    case paused(PauseStudySessionDTO)
-    case resumed(ResumeStudySessionDTO)
-    case finished(EndStudySessionDTO)
-    case resumedAndFinished(resume: ResumeStudySessionDTO, end: EndStudySessionDTO)
+    case paused(sessionId: UUID, dto: PauseStudySessionDTO)
+    case resumed(sessionId: UUID, dto: ResumeStudySessionDTO)
+    case finished(sessionId: UUID, dto: EndStudySessionDTO)
+    case resumedAndFinished(sessionId: UUID, resume: ResumeStudySessionDTO, end: EndStudySessionDTO)
 }

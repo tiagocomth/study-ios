@@ -99,7 +99,8 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         logger.info("Paused study session \(session.sessionId.uuidString) with pause \(pause.pauseId.uuidString)")
 
         return .paused(
-            PauseStudySessionDTO(
+            sessionId: session.sessionId,
+            dto: PauseStudySessionDTO(
                 pauseId: pause.pauseId,
                 startedAt: pause.startedAt
             )
@@ -130,7 +131,8 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         logger.info("Resumed study session \(session.sessionId.uuidString)")
 
         return .resumed(
-            ResumeStudySessionDTO(
+            sessionId: session.sessionId,
+            dto: ResumeStudySessionDTO(
                 endedAt: endedAt
             )
         )
@@ -168,10 +170,10 @@ actor StudySessionTrackerService: StudySessionTrackerServiceProtocol {
         )
 
         if let closePauseDTO {
-            return .resumedAndFinished(resume: closePauseDTO, end: endDTO)
+            return .resumedAndFinished(sessionId: session.sessionId, resume: closePauseDTO, end: endDTO)
         }
 
-        return .finished(endDTO)
+        return .finished(sessionId: session.sessionId, dto: endDTO)
     }
 
     func clear() {
