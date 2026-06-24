@@ -56,11 +56,11 @@ final class AuthCoordinator: Coordinator {
 }
 
 extension AuthCoordinator: LoginCoordinatorProtocol {
+    
     func navigateToRegister() {
         navigateTo(route: .register)
     }
-    
-    
+
     func navigateToForgotPassword() {
         navigateTo(route: .forgotPassword)
     }
