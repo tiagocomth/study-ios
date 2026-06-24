@@ -6,14 +6,17 @@
 import Foundation
 
 final class OfflineOperationSenderService: OfflineOperationSenderServiceProtocol {
-    private let apiClient: APIClientProtocol
+    private let studySessionRemoteService: StudySessionRemoteServiceProtocol
+    private let categoryService: CategoryServiceProtocol
     private let logger: DomainLogging
 
     init(
-        apiClient: APIClientProtocol,
+        studySessionRemoteService: StudySessionRemoteServiceProtocol,
+        categoryService: CategoryServiceProtocol,
         logger: DomainLogging = OfflineOperationQueueLogger()
     ) {
-        self.apiClient = apiClient
+        self.studySessionRemoteService = studySessionRemoteService
+        self.categoryService = categoryService
         self.logger = logger
     }
 
@@ -22,39 +25,25 @@ final class OfflineOperationSenderService: OfflineOperationSenderServiceProtocol
 
         switch operation.kind {
         case .startStudySession(let dto):
-            let _: EmptyResponse = try await apiClient.request(
-                StudySessionEndpoint.startStudySession(dto)
-            )
+            try await studySessionRemoteService.start(dto)
 
         case .pauseStudySession(let id, let dto):
-            let _: EmptyResponse = try await apiClient.request(
-                StudySessionEndpoint.pauseStudySession(id: id, dto: dto)
-            )
+            try await studySessionRemoteService.pause(id: id, dto: dto)
 
         case .resumeStudySession(let id, let dto):
-            let _: EmptyResponse = try await apiClient.request(
-                StudySessionEndpoint.resumeStudySession(id: id, dto: dto)
-            )
+            try await studySessionRemoteService.resume(id: id, dto: dto)
 
         case .endStudySession(let id, let dto):
-            let _: EmptyResponse = try await apiClient.request(
-                StudySessionEndpoint.endStudySession(id: id, dto: dto)
-            )
+            try await studySessionRemoteService.finish(id: id, dto: dto)
 
         case .createCategory(let dto):
-            let _: StudyCategory = try await apiClient.request(
-                StudySessionEndpoint.createCategory(dto)
-            )
+            try await categoryService.create(dto)
 
         case .updateCategory(let id, let dto):
-            let _: StudyCategory = try await apiClient.request(
-                StudySessionEndpoint.updateCategory(id: id, dto: dto)
-            )
+            try await categoryService.update(id: id, dto: dto)
 
         case .deleteCategory(let id):
-            let _: EmptyResponse = try await apiClient.request(
-                StudySessionEndpoint.deleteCategory(id)
-            )
+            try await categoryService.delete(id: id)
         }
 
         logger.info("Sent offline operation \(operation.id.uuidString)")
