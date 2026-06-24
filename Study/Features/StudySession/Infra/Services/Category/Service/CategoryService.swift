@@ -22,8 +22,8 @@ final class CategoryService: CategoryServiceProtocol {
         return try await apiClient.request(StudySessionEndpoint.getCategories)
     }
 
-    func getById(_ id: String) async throws(NetworkError) -> StudyCategory {
-        logger.info("Fetching category \(id)")
+    func getById(_ id: UUID) async throws(NetworkError) -> StudyCategory {
+        logger.info("Fetching category \(id.uuidString)")
         return try await apiClient.request(StudySessionEndpoint.getCategoryById(id))
     }
 
@@ -32,13 +32,13 @@ final class CategoryService: CategoryServiceProtocol {
         return try await apiClient.request(StudySessionEndpoint.createCategory(dto))
     }
 
-    func update(id: String, dto: UpdateCategoryDTO) async throws(NetworkError) -> StudyCategory {
-        logger.info("Updating category \(id)")
+    func update(id: UUID, dto: UpdateCategoryDTO) async throws(NetworkError) -> StudyCategory {
+        logger.info("Updating category \(id.uuidString)")
         return try await apiClient.request(StudySessionEndpoint.updateCategory(id: id, dto: dto))
     }
 
-    func delete(id: String) async throws(NetworkError) {
-        logger.info("Deleting category \(id)")
+    func delete(id: UUID) async throws(NetworkError) {
+        logger.info("Deleting category \(id.uuidString)")
         let _: EmptyResponse = try await apiClient.request(StudySessionEndpoint.deleteCategory(id))
     }
 }

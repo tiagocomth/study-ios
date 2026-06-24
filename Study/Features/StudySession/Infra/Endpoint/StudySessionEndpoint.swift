@@ -13,10 +13,10 @@ enum StudySessionEndpoint: Endpoint {
     case endStudySession(id: UUID, dto: EndStudySessionDTO)
 
     case getCategories
-    case getCategoryById(String)
+    case getCategoryById(UUID)
     case createCategory(CreateCategoryDTO)
-    case updateCategory(id: String, dto: UpdateCategoryDTO)
-    case deleteCategory(String)
+    case updateCategory(id: UUID, dto: UpdateCategoryDTO)
+    case deleteCategory(UUID)
 
     var path: String {
         switch self {
@@ -33,9 +33,9 @@ enum StudySessionEndpoint: Endpoint {
         case .getCategories, .createCategory:
             "/categories"
         case .getCategoryById(let id), .deleteCategory(let id):
-            "/categories/\(id)"
+            "/categories/\(id.uuidString)"
         case .updateCategory(let id, _):
-            "/categories/\(id)"
+            "/categories/\(id.uuidString)"
         }
     }
 

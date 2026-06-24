@@ -5,6 +5,6 @@
 
 import Foundation
 
-nonisolated struct CreateCategoryDTO: Encodable, Equatable, Sendable {
+nonisolated struct CreateCategoryDTO: Codable, Equatable, Sendable {
     let name: String
 }

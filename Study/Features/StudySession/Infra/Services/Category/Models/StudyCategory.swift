@@ -6,6 +6,8 @@
 import Foundation
 
 nonisolated struct StudyCategory: Decodable, Equatable, Sendable {
-    let id: String
+    let categoryId: UUID
+    let userId: UUID
     let name: String
+    let createdAt: String
 }
