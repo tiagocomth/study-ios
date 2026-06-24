@@ -8,14 +8,18 @@ import Foundation
 protocol ProfileWorkerProtocol {
     func updateProfile(request: UpdateProfileRequest) async throws(NetworkError) -> GetProfileResponse
     func getProfile(id: String) async throws(NetworkError) -> UpdateProfileResponse
+    func getMyProfile() async throws(NetworkError) -> UpdateProfileResponse
     func getSessions() async throws(NetworkError) -> GetMySessionsResponse
     func logout()
 }
 
 final class ProfileWorker: ProfileWorkerProtocol {
-    
     private let service: ProfileServiceProtocol
     private let userSession: UserSessionProtocol
+
+    private var currentUser: User? {
+        userSession.currentUser
+    }
 
     init(service: ProfileServiceProtocol, userSession: UserSessionProtocol) {
         self.service = service
@@ -51,6 +55,13 @@ final class ProfileWorker: ProfileWorkerProtocol {
             userSession.update(user: updatedUser)
         }
         return response
+    }
+
+    func getMyProfile() async throws(NetworkError) -> UpdateProfileResponse {
+        guard let userId = userSession.currentUser?.id else {
+            throw NetworkError.unauthorized(message: "Nenhum usuário logado.")
+        }
+        return try await getProfile(id: userId)
     }
 
     func getSessions() async throws(NetworkError) -> GetMySessionsResponse {
