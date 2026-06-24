@@ -29,7 +29,6 @@ final class ProfileWorker: ProfileWorkerProtocol {
     func updateProfile(request: UpdateProfileRequest) async throws(NetworkError) -> GetProfileResponse {
         let response = try await service.updateProfile(request: request)
         
-        let currentUser = userSession.currentUser
         let updatedUser = User(
             id: response.userId,
             name: response.name,
@@ -44,7 +43,7 @@ final class ProfileWorker: ProfileWorkerProtocol {
     func getProfile(id: String) async throws(NetworkError) -> UpdateProfileResponse {
         let response = try await service.getProfile(id: id)
         
-        if response.data.userId == userSession.currentUser?.id {
+        if response.data.userId == currentUser?.id {
             let updatedUser = User(
                 id: response.data.userId,
                 name: response.data.name,
@@ -58,7 +57,7 @@ final class ProfileWorker: ProfileWorkerProtocol {
     }
 
     func getMyProfile() async throws(NetworkError) -> UpdateProfileResponse {
-        guard let userId = userSession.currentUser?.id else {
+        guard let userId = currentUser?.id else {
             throw NetworkError.unauthorized(message: "Nenhum usuário logado.")
         }
         return try await getProfile(id: userId)

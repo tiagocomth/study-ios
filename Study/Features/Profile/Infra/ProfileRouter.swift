@@ -13,4 +13,5 @@ enum ProfileRouter: Hashable, Identifiable {
     
     case premium
     case logoutConfirmation
+    case editProfile
 }

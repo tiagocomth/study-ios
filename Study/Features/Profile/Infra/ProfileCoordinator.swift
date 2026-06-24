@@ -10,6 +10,8 @@ protocol ProfileCoordinatorProtocol: AnyObject {
     func dismissPremium()
     func presentLogoutConfirmation()
     func dismissLogoutConfirmation()
+    func presentEditProfile()
+    func dismissEditProfile()
 }
 
 protocol PremiumCoordinatorProtocol: AnyObject {
@@ -18,6 +20,10 @@ protocol PremiumCoordinatorProtocol: AnyObject {
 
 protocol LogoutConfirmationCoordinatorProtocol: AnyObject {
     func dismissLogoutConfirmation()
+}
+
+protocol EditProfileCoordinatorProtocol: AnyObject {
+    func dismissEditProfile()
 }
 
 final class ProfileCoordinator: Coordinator {
@@ -40,6 +46,8 @@ final class ProfileCoordinator: Coordinator {
             factory.makePremiumView()
         case .logoutConfirmation:
             factory.makeLogoutConfirmationView()
+        case .editProfile:
+            factory.makeEditProfileView()
         }
     }
 }
@@ -61,7 +69,16 @@ extension ProfileCoordinator: ProfileCoordinatorProtocol {
     func dismissLogoutConfirmation() {
         navigationController.dismissSheet()
     }
+
+    func presentEditProfile() {
+        navigationController.presentSheet(router: ProfileRouter.editProfile)
+    }
+
+    func dismissEditProfile() {
+        navigationController.dismissSheet()
+    }
 }
 
 extension ProfileCoordinator: PremiumCoordinatorProtocol {}
 extension ProfileCoordinator: LogoutConfirmationCoordinatorProtocol {}
+extension ProfileCoordinator: EditProfileCoordinatorProtocol {}
