@@ -5,6 +5,6 @@
 
 import Foundation
 
-nonisolated protocol StudySessionActionSenderOrchestrationProtocol {
+nonisolated protocol StudySessionActionOrchestrationProtocol {
     func send(_ action: StudySessionTrackerAction) async throws
 }

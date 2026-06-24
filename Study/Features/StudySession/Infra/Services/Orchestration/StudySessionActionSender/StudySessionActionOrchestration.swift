@@ -5,7 +5,7 @@
 
 import Foundation
 
-final class StudySessionActionSenderOrchestration: StudySessionActionSenderOrchestrationProtocol {
+final class StudySessionActionOrchestration: StudySessionActionOrchestrationProtocol {
     private let offlineOperationSender: OfflineOperationSenderRemoteProtocol
     private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
     private let makeId: @Sendable () -> UUID
@@ -28,7 +28,7 @@ final class StudySessionActionSenderOrchestration: StudySessionActionSenderOrche
     }
 }
 
-private extension StudySessionActionSenderOrchestration {
+private extension StudySessionActionOrchestration {
     func makeOperations(for action: StudySessionTrackerAction) -> [PendingOfflineOperation] {
         switch action {
         case .started(let dto):
