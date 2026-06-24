@@ -5,7 +5,7 @@
 
 import Foundation
 
-final class CategoryService: CategoryServiceProtocol {
+final class CategoryService: CategoryServiceProtocol { // TODO: Mudar o nome para remote
     private let apiClient: APIClientProtocol
     private let logger: DomainLogging
 

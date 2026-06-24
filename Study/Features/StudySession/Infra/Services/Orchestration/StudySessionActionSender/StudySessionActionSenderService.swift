@@ -5,7 +5,7 @@
 
 import Foundation
 
-final class StudySessionActionSenderService: StudySessionActionSenderServiceProtocol {
+final class StudySessionActionSenderService: StudySessionActionSenderServiceProtocol { // TODO: Mudar o nome, colocando orchestration
     private let offlineOperationSender: OfflineOperationSenderServiceProtocol
     private let offlineOperationQueue: OfflineOperationQueueServiceProtocol
     private let makeId: @Sendable () -> UUID
