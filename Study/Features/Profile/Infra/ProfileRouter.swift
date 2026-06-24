@@ -11,6 +11,6 @@ import Foundation
 enum ProfileRouter: Hashable, Identifiable {
     var id: Self { self }
     
-    // TODO: Analisar melhor as rotas a partir da tela de Perfil
     case premium
+    case logoutConfirmation
 }

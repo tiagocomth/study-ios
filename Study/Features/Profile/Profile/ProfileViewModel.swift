@@ -7,12 +7,19 @@ import Foundation
 import Combine
 
 final class ProfileViewModel: ObservableObject {
-    weak var coordinator: ProfileCoordinator?
+    
+    weak var coordinator: ProfileCoordinatorProtocol?
     private let worker: ProfileWorkerProtocol
 
     init(worker: ProfileWorkerProtocol) {
         self.worker = worker
     }
 
-    // TODO: lógica de apresentação
+    func presentPremium() {
+        coordinator?.presentPremium()
+    }
+
+    func showLogoutConfirmation() {
+        coordinator?.presentLogoutConfirmation()
+    }
 }

@@ -6,24 +6,54 @@
 import SwiftUI
 
 final class ProfileFactory {
-    // TODO: cria as Views e gerencia o ciclo de vida dos ViewModels
+    
     weak var profileCoordinator: ProfileCoordinator?
     
     private let apiClient: APIClientProtocol
     private let userSession: UserSessionProtocol
+    private let paymentService: PaymentProtocol
     
-    init(apiClient: APIClientProtocol, userSession: UserSessionProtocol) {
+    init(apiClient: APIClientProtocol, userSession: UserSessionProtocol, paymentService: PaymentProtocol) {
         self.apiClient = apiClient
         self.userSession = userSession
+        self.paymentService = paymentService
+    }
+    
+    func makeProfileView() -> some View {
+        let vm = makeProfileVM()
+        return ProfileView(viewModel: vm)
+    }
+    
+    func makePremiumView() -> some View {
+        let vm = makePremiumVM()
+        return PremiumView(viewModel: vm)
+    }
+    
+    func makeLogoutConfirmationView() -> some View {
+        let vm = LogoutConfirmationViewModel(userSession: userSession)
+        vm.coordinator = profileCoordinator
+        return LogoutConfirmationView(viewModel: vm)
     }
 }
 
-// MARK: Internal
+// MARK: - Internal
 extension ProfileFactory {
     private func makeProfileVM() -> ProfileViewModel {
-        let worker = ProfileWorker()
+        let service = ProfileService(apiClient: apiClient)
+        let worker = ProfileWorker(service: service, userSession: userSession)
         let vm = ProfileViewModel(worker: worker)
         vm.coordinator = profileCoordinator
         return vm
+    }
+    
+    private func makePremiumVM() -> PremiumViewModel {
+        let worker = PremiumWorker(paymentService: paymentService, userSession: userSession)
+        let vm = PremiumViewModel(worker: worker)
+        vm.coordinator = profileCoordinator
+        return vm
+    }
+    
+    private func makeLogoutVM() -> LogoutConfirmationViewModel {
+        return LogoutConfirmationViewModel(userSession: userSession)
     }
 }
