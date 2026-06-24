@@ -19,7 +19,7 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
         self.logger = logger
     }
 
-    func getAll() async throws(CategoryLocalStoreError) -> [StudyCategory] {
+    func getAll() throws(CategoryLocalStoreError) -> [StudyCategory] {
         do {
             return try fetchAllStoredCategories().map { $0.toStudyCategory() }
         } catch {
@@ -28,7 +28,7 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
         }
     }
 
-    func getById(_ id: UUID) async throws(CategoryLocalStoreError) -> StudyCategory? {
+    func getById(_ id: UUID) throws(CategoryLocalStoreError) -> StudyCategory? {
         do {
             return try fetchStoredCategory(id: id)?.toStudyCategory()
         } catch {
@@ -37,7 +37,7 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
         }
     }
 
-    func saveAll(_ categories: [StudyCategory]) async throws(CategoryLocalStoreError) {
+    func saveAll(_ categories: [StudyCategory]) throws(CategoryLocalStoreError) {
         do {
             try categories.forEach { try saveCategory($0) }
             try context.save()
@@ -48,7 +48,7 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
         }
     }
 
-    func save(_ category: StudyCategory) async throws(CategoryLocalStoreError) {
+    func save(_ category: StudyCategory) throws(CategoryLocalStoreError) {
         do {
             try saveCategory(category)
             try context.save()
@@ -59,7 +59,7 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
         }
     }
 
-    func delete(id: UUID) async throws(CategoryLocalStoreError) {
+    func delete(id: UUID) throws(CategoryLocalStoreError) {
         do {
             if let category = try fetchStoredCategory(id: id) {
                 context.delete(category)
@@ -72,7 +72,7 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
         }
     }
 
-    func rollbackCreate(id: UUID) async throws(CategoryLocalStoreError) {
+    func rollbackCreate(id: UUID) throws(CategoryLocalStoreError) {
         do {
             if let category = try fetchStoredCategory(id: id) {
                 context.delete(category)
@@ -85,7 +85,7 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
         }
     }
 
-    func rollbackUpdate(previousCategory: StudyCategory) async throws(CategoryLocalStoreError) {
+    func rollbackUpdate(previousCategory: StudyCategory) throws(CategoryLocalStoreError) {
         do {
             try saveCategory(previousCategory)
             try context.save()
@@ -96,7 +96,7 @@ final class CategoryLocalStoreService: CategoryLocalStoreServiceProtocol {
         }
     }
 
-    func rollbackDelete(deletedCategory: StudyCategory) async throws(CategoryLocalStoreError) {
+    func rollbackDelete(deletedCategory: StudyCategory) throws(CategoryLocalStoreError) {
         do {
             try saveCategory(deletedCategory)
             try context.save()
