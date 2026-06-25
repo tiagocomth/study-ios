@@ -6,6 +6,8 @@
 import Foundation
 
 /// `UserResponseDto` da API — hoje traz apenas `id` e `email`.
+/// (O Swagger anuncia `{ userId, name, isPremium, photoId }`, mas a resposta
+/// real ainda é `{ id, email }`.)
 struct AuthUserDTO: Decodable {
     let id: String
     let email: String
