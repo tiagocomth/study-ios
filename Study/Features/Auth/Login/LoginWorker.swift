@@ -6,38 +6,50 @@
 import Foundation
 
 protocol LoginWorkerProtocol {
-    func login(email: Email, password: Password) async throws -> AuthResponse
+    /// Regra que habilita o login a partir do que está preenchido na tela.
+    func canLogin(email: String, password: String) -> Bool
+    /// Valida as entradas, autentica e inicia a sessão.
+    func login(email: Email, password: Password) async throws
 }
 
 final class LoginWorker: LoginWorkerProtocol {
     private let service: LoginServiceProtocol
+    private let session: UserSessionProtocol
 
-    init(service: LoginServiceProtocol) {
+    init(service: LoginServiceProtocol, session: UserSessionProtocol) {
         self.service = service
+        self.session = session
     }
 
-    func login(email: Email, password: Password) async throws -> AuthResponse {
+    func canLogin(email: String, password: String) -> Bool {
+        Email(value: email).isValid() && Password(value: password).isValid()
+    }
+
+    func login(email: Email, password: Password) async throws {
         guard email.isValid() else {
             throw LoginWorkerError.invalidEmail
         }
-        guard !password.value.isEmpty else {
-            throw LoginWorkerError.missingPassword
+        guard password.isValid() else {
+            throw LoginWorkerError.invalidPassword
         }
 
-        return try await service.login(email: email, password: password)
+        let response = try await service.login(email: email, password: password)
+        // Sessão é iniciada aqui (regra de negócio fora do ViewModel). O root do
+        // app observa o `UserSessionService` e troca para a tela principal.
+        await session.startSession(user: response.user, token: response.token)
     }
 }
 
 enum LoginWorkerError: LocalizedError {
     case invalidEmail
-    case missingPassword
+    case invalidPassword
 
     var errorDescription: String? {
         switch self {
         case .invalidEmail:
             return "Invalid email."
-        case .missingPassword:
-            return "Password is required."
+        case .invalidPassword:
+            return "Password must be at least 8 characters."
         }
     }
 }

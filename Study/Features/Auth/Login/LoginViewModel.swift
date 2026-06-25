@@ -15,15 +15,14 @@ final class LoginViewModel: ObservableObject {
 
     weak var coordinator: LoginCoordinatorProtocol?
     private let worker: LoginWorkerProtocol
-    private let session: UserSessionProtocol
 
-    init(worker: LoginWorkerProtocol, session: UserSessionProtocol) {
+    init(worker: LoginWorkerProtocol) {
         self.worker = worker
-        self.session = session
     }
 
+    /// Habilita o botão — regra definida pelo Worker.
     var isFormValid: Bool {
-        Email(value: email).isValid() && !password.isEmpty
+        worker.canLogin(email: email, password: password)
     }
 
     func login() {
@@ -33,13 +32,12 @@ final class LoginViewModel: ObservableObject {
 
         Task {
             do {
-                let response = try await worker.login(
+                // O Worker autentica e inicia a sessão; o root do app observa o
+                // `UserSessionService` e troca automaticamente para a tela principal.
+                try await worker.login(
                     email: Email(value: email),
                     password: Password(value: password)
                 )
-                // Sessão logada: o root do app observa o `UserSessionService`
-                // e troca automaticamente para a tela principal.
-                session.startSession(user: response.user, token: response.token)
             } catch {
                 errorMessage = error.localizedDescription
             }
