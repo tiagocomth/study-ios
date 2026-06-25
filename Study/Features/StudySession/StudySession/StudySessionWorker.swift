@@ -47,7 +47,7 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
         await studySessionTrackerOrchestration.getActiveSession()
     }
 
-    func startStudySession(categoryId: UUID) async throws {
+    func startStudySession(categoryId: UUID) async throws { // TODO: Como vai funcionar para a tela saber se tem q aumentar ou diminuir o tempo
         try await studySessionTrackerOrchestration.start(categoryId: categoryId)
     }
 

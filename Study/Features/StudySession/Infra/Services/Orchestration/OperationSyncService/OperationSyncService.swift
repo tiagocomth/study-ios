@@ -36,7 +36,7 @@ final class OperationSyncService: OperationSyncServiceProtocol {
         await restore()
 
         guard try await flushPendingOperations() else { return }
-        try await refreshCategories()
+        //TODO: notifier worker ser um published, que o view model do study session conhece
     }
 }
 
@@ -65,14 +65,5 @@ private extension OperationSyncService {
         }
 
         return true
-    }
-
-    func refreshCategories() async throws {
-        guard await offlineOperationQueue.peek() == nil else { return }
-
-        let backendCategories = try await categoryRemote.getAll()
-        guard await offlineOperationQueue.peek() == nil else { return }
-
-        try categoryLocal.saveAll(backendCategories)
     }
 }

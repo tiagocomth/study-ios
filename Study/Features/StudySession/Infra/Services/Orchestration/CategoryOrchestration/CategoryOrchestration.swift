@@ -38,7 +38,7 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
             
             guard let self else { return }
             
-            guard let backendCategories = try? await refreshCategoriesFromBackendIfQueueIsEmpty() else { return }
+            guard let backendCategories = try? await refreshCategories() else { return }
             onBackendRefresh(backendCategories)
         }
         
@@ -138,7 +138,7 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
 }
 
 private extension CategoryOrchestration {
-    private func refreshCategoriesFromBackendIfQueueIsEmpty() async throws -> [StudyCategory]? {
+    private func refreshCategories() async throws -> [StudyCategory]? {
         guard await offlineOperationQueue.peek() == nil else { return nil }
 
         let backendCategories = try await categoryRemote.getAll()
