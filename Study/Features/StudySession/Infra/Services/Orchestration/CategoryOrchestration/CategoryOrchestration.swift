@@ -35,8 +35,10 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
         let localCategories = try categoryLocal.getAll()
         
         let task = Task { @MainActor [weak self] in
+            
             guard let self else { return }
-            guard let backendCategories = try? await refreshCategoriesFromBackend() else { return }
+            
+            guard let backendCategories = try? await refreshCategoriesFromBackendIfQueueIsEmpty() else { return }
             onBackendRefresh(backendCategories)
         }
         
@@ -136,8 +138,12 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
 }
 
 private extension CategoryOrchestration {
-    private func refreshCategoriesFromBackend() async throws -> [StudyCategory] {
+    private func refreshCategoriesFromBackendIfQueueIsEmpty() async throws -> [StudyCategory]? {
+        guard await offlineOperationQueue.peek() == nil else { return nil }
+
         let backendCategories = try await categoryRemote.getAll()
+        guard await offlineOperationQueue.peek() == nil else { return nil }
+
         try categoryLocal.saveAll(backendCategories)
         return backendCategories
     }
