@@ -14,7 +14,10 @@ struct SessionDTO: Decodable {
     let startedAt: String
     let endedAt: String
     let duration: Int
+    let category: CategoryDTO
+}
 
+extension SessionDTO {
     func toDomain(dateParser: DateParsing = ISO8601DateParser()) -> Session {
         let startDate = dateParser.parse(startedAt) ?? Date()
         let endDate = dateParser.parse(endedAt) ?? Date()

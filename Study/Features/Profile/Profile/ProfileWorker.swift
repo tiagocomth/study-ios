@@ -59,9 +59,10 @@ final class ProfileWorker: ProfileWorkerProtocol {
     func logout() {
         userSession.logout()
     }
-    
-    // MARK: - Study Hours Calculation
-    
+}
+
+// MARK: Business Logic for Study Hours Calculation
+extension ProfileWorker {
     private func calculateHours(for sessions: [Session]) -> (today: Double, week: Double, month: Double) {
         let calendar = Calendar.current
         let now = Date()
