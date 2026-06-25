@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct Email {
+struct Email: Hashable {
     var value: String
 
     init(value: String = "") {

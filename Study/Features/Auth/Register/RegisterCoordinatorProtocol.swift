@@ -8,5 +8,5 @@
 import Foundation
 
 protocol RegisterCoordinatorProtocol: AnyObject {
-    func navigateToEmailValidate(email: String)
+    func navigateToEmailValidate(email: Email)
 }

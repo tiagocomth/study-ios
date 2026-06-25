@@ -14,5 +14,5 @@ enum AuthRouter: Hashable, Identifiable {
     case code
     case newPassword
     case register
-    case emailValidate(email: String)
+    case emailValidate(email: Email)
 }

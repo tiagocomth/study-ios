@@ -88,7 +88,7 @@ extension AuthCoordinator: NewPasswordCoordinatorProtocol {
 }
 
 extension AuthCoordinator: RegisterCoordinatorProtocol {
-    func navigateToEmailValidate(email: String) {
+    func navigateToEmailValidate(email: Email) {
         navigateTo(route: .emailValidate(email: email))
     }
 }
