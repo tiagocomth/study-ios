@@ -6,6 +6,8 @@
 import Foundation
 
 protocol RegisterWorkerProtocol {
+    /// Regra que habilita o cadastro a partir do que está preenchido na tela.
+    func canRegister(name: String, email: String, password: String, confirmation: String) -> Bool
     func register(name: String, email: Email, password: Password, confirmation: Password) async throws
 }
 
@@ -14,6 +16,13 @@ final class RegisterWorker: RegisterWorkerProtocol {
 
     init(service: RegisterServiceProtocol) {
         self.service = service
+    }
+
+    func canRegister(name: String, email: String, password: String, confirmation: String) -> Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        Email(value: email).isValid() &&
+        Password(value: password).isValid() &&
+        Password(value: password) == Password(value: confirmation)
     }
 
     func register(name: String, email: Email, password: Password, confirmation: Password) async throws {

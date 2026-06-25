@@ -22,11 +22,14 @@ final class RegisterViewModel: ObservableObject {
         self.worker = worker
     }
 
+    /// Habilita o botão — regra definida pelo Worker.
     var isFormValid: Bool {
-        !name.isEmpty &&
-        Email(value: email).isValid() &&
-        Password(value: password).isValid() &&
-        password == confirmPassword
+        worker.canRegister(
+            name: name,
+            email: email,
+            password: password,
+            confirmation: confirmPassword
+        )
     }
 
     func register() {
@@ -42,7 +45,7 @@ final class RegisterViewModel: ObservableObject {
                     password: Password(value: password),
                     confirmation: Password(value: confirmPassword)
                 )
-                coordinator?.navigateToEmailValidate(email: email)
+                coordinator?.navigateToEmailValidate(email: Email(value: email))
             } catch {
                 errorMessage = error.localizedDescription
             }
