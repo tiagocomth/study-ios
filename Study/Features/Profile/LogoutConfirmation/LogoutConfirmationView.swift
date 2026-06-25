@@ -6,6 +6,7 @@
 import SwiftUI
 
 struct LogoutConfirmationView: View {
+    
     @StateObject var viewModel: LogoutConfirmationViewModel
 
     var body: some View {

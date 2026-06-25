@@ -57,8 +57,7 @@ final class EditProfileViewModel: ObservableObject {
         }
 
         isLoading = false
-        // Analisar sobre a volta do isSuccess para false
-        // Visto que a ViewModel é criada na Factory, e se o usuário clicar de novo o estado estará persistido como success = true
+        // MARK: Analisar sobre a volta do isSuccess para false, porque a ViewModel é criada na Factory, e se o usuário clicar de novo o estado estará persistido como success = true
     }
 
     func dismiss() {
