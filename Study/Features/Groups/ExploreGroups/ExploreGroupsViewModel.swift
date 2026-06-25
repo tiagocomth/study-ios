@@ -6,6 +6,7 @@
 import Foundation
 import Combine
 
+@MainActor
 final class ExploreGroupsViewModel: ObservableObject {
     /// Filtro de privacidade do segmented control.
     enum PrivacyScope: CaseIterable, Identifiable {
@@ -50,11 +51,9 @@ final class ExploreGroupsViewModel: ObservableObject {
     private var totalCount = 0
     /// Última página já carregada.
     private var currentPage = 1
-    /// Quantas linhas antes do fim disparam o carregamento da próxima página.
-    private let prefetchThreshold = 3
 
-    /// Ainda há páginas para carregar?
-    var canLoadMore: Bool { groups.count < totalCount }
+    /// Ainda há páginas para carregar? (regra no Worker)
+    var canLoadMore: Bool { worker.canLoadMore(loaded: groups.count, total: totalCount) }
 
     init(worker: ExploreGroupsWorkerProtocol) {
         self.worker = worker
@@ -103,43 +102,39 @@ final class ExploreGroupsViewModel: ObservableObject {
     private func loadGroups() {
         let query = currentQuery
 
-        isLoading = true
-        errorMessage = nil
-
         // Cancela cargas em voo (primeira página ou paginação) para não aplicar
         // resultado obsoleto.
         pageTask?.cancel()
         loadTask?.cancel()
+        // As mutações de `@Published` ficam dentro da `Task` (próximo turno do main
+        // actor) para não publicar durante a atualização da view (warning roxo).
         loadTask = Task {
+            isLoading = true
+            errorMessage = nil
             do {
                 let page = try await worker.exploreGroups(filter: query.term, isPrivate: query.isPrivate, page: 1)
-                await MainActor.run {
-                    // Só aplica se o filtro (texto + privacidade) ainda é o atual.
-                    guard !Task.isCancelled, query == currentQuery else { return }
-                    groups = page.groups
-                    totalCount = page.total
-                    currentPage = 1
-                    isLoading = false
-                }
+                // Só aplica se o filtro (texto + privacidade) ainda é o atual.
+                guard !Task.isCancelled, query == currentQuery else { return }
+                groups = page.groups
+                totalCount = page.total
+                currentPage = 1
+                isLoading = false
             } catch {
-                await MainActor.run {
-                    guard !Task.isCancelled, query == currentQuery else { return }
-                    // Em erro, limpa a lista para não exibir itens de um filtro anterior.
-                    groups = []
-                    totalCount = 0
-                    errorMessage = error.localizedDescription
-                    isLoading = false
-                }
+                guard !Task.isCancelled, query == currentQuery else { return }
+                // Em erro, limpa a lista para não exibir itens de um filtro anterior.
+                groups = []
+                totalCount = 0
+                errorMessage = error.localizedDescription
+                isLoading = false
             }
         }
     }
 
     /// Chamado quando uma linha aparece: dispara a próxima página ao se aproximar
-    /// do fim da lista.
+    /// do fim da lista (decisão no Worker).
     func loadMoreIfNeeded(currentItem: StudyGroup) {
         guard let index = groups.firstIndex(where: { $0.id == currentItem.id }) else { return }
-        let triggerIndex = groups.count - prefetchThreshold
-        guard index >= triggerIndex else { return }
+        guard worker.shouldLoadMore(at: index, loaded: groups.count, total: totalCount) else { return }
         loadNextPage()
     }
 
@@ -150,42 +145,37 @@ final class ExploreGroupsViewModel: ObservableObject {
         let query = currentQuery
         let nextPage = currentPage + 1
 
-        isLoadingMore = true
         pageTask?.cancel()
         pageTask = Task {
+            isLoadingMore = true
             do {
                 let page = try await worker.exploreGroups(filter: query.term, isPrivate: query.isPrivate, page: nextPage)
-                await MainActor.run {
-                    // Descarta se o filtro mudou no meio do caminho.
-                    guard !Task.isCancelled, query == currentQuery else {
-                        isLoadingMore = false
-                        return
-                    }
-                    // Evita duplicar itens caso a página chegue mais de uma vez.
-                    let existingIds = Set(groups.map(\.id))
-                    groups.append(contentsOf: page.groups.filter { !existingIds.contains($0.id) })
-                    totalCount = page.total
-                    currentPage = nextPage
+                // Descarta se o filtro mudou no meio do caminho.
+                guard !Task.isCancelled, query == currentQuery else {
                     isLoadingMore = false
+                    return
                 }
+                // Evita duplicar itens caso a página chegue mais de uma vez.
+                let existingIds = Set(groups.map(\.id))
+                groups.append(contentsOf: page.groups.filter { !existingIds.contains($0.id) })
+                totalCount = page.total
+                currentPage = nextPage
+                isLoadingMore = false
             } catch {
-                await MainActor.run {
-                    // Falha de paginação não derruba a lista já carregada.
-                    isLoadingMore = false
-                }
+                // Falha de paginação não derruba a lista já carregada.
+                isLoadingMore = false
             }
         }
     }
 
     /// Identidade do filtro atual (termo + privacidade), usada para descartar
-    /// respostas obsoletas.
+    /// respostas obsoletas. A normalização do termo é regra do Worker.
     private struct Query: Equatable {
         let term: String?
         let isPrivate: Bool?
     }
 
     private var currentQuery: Query {
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return Query(term: trimmed.isEmpty ? nil : trimmed, isPrivate: privacyScope.isPrivate)
+        Query(term: worker.normalize(searchText: searchText), isPrivate: privacyScope.isPrivate)
     }
 }
