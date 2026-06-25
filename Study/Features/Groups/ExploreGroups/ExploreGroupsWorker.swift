@@ -6,6 +6,7 @@
 import Foundation
 
 protocol ExploreGroupsWorkerProtocol {
+    func exploreGroups(filter: String?, isPrivate: Bool?, page: Int) async throws -> GroupsPage
 }
 
 final class ExploreGroupsWorker: ExploreGroupsWorkerProtocol {
@@ -15,5 +16,7 @@ final class ExploreGroupsWorker: ExploreGroupsWorkerProtocol {
         self.service = service
     }
 
-    // TODO: ações — func exploreGroups(page, name?) -> GET /groups?filter=name&page=1
+    func exploreGroups(filter: String?, isPrivate: Bool?, page: Int) async throws -> GroupsPage {
+        try await service.fetchGroups(filter: filter, isPrivate: isPrivate, page: page)
+    }
 }
