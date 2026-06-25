@@ -6,6 +6,8 @@
 import Foundation
 
 protocol CodeWorkerProtocol {
+    /// Regra que habilita a validação a partir do código preenchido na tela.
+    func canValidate(_ code: PasswordResetCode) -> Bool
     func validatePasswordResetCode(_ code: PasswordResetCode) async throws
 }
 
@@ -16,6 +18,10 @@ final class CodeWorker: CodeWorkerProtocol {
     init(service: CodeServiceProtocol, sessionStore: PasswordResetSessionStore) {
         self.service = service
         self.sessionStore = sessionStore
+    }
+
+    func canValidate(_ code: PasswordResetCode) -> Bool {
+        code.isValid()
     }
 
     func validatePasswordResetCode(_ code: PasswordResetCode) async throws {

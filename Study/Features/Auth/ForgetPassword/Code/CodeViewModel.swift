@@ -54,7 +54,8 @@ final class CodeViewModel: ObservableObject {
     private func updateCodeValue(_ value: String) {
         objectWillChange.send()
         code = PasswordResetCode(value: value)
-        canValidateCode = code.isValid()
+        // Regra de validação fica no Worker.
+        canValidateCode = worker.canValidate(code)
         errorMessage = nil
     }
 }
