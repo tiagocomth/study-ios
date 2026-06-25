@@ -36,7 +36,7 @@ final class LoginWorker: LoginWorkerProtocol {
         let response = try await service.login(email: email, password: password)
         // Sessão é iniciada aqui (regra de negócio fora do ViewModel). O root do
         // app observa o `UserSessionService` e troca para a tela principal.
-        await session.startSession(user: response.user, token: response.token)
+        session.startSession(user: response.user, token: response.token)
     }
 }
 

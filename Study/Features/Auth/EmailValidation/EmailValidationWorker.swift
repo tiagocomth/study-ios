@@ -38,7 +38,7 @@ final class EmailValidationWorker: EmailValidationWorkerProtocol {
         let response = try await service.validate(email: email, code: resetCode)
         // Sessão é iniciada aqui (regra de negócio fora do ViewModel). O root do
         // app observa o `UserSessionService` e troca para a tela principal.
-        await session.startSession(user: response.user, token: response.token)
+        session.startSession(user: response.user, token: response.token)
     }
 
     func resendCode(email: Email) async throws {
