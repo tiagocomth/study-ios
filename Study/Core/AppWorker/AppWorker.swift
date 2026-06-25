@@ -46,6 +46,10 @@ final class AppWorker {
         return appCoordinator.makeAuthCoordinator(apiClient: apiClient, session: userSessionService)
     }
 
+    func makeGroupCoordinator() -> GroupCoordinator {
+        return appCoordinator.makeGroupCoordinator(apiClient: apiClient)
+    }
+
 }
 
 private extension AppWorker {

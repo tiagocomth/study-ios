@@ -18,7 +18,8 @@ struct StudyApp: App {
 }
 
 /// Decide o que mostrar com base na sessão: enquanto não há usuário logado,
-/// exibe o fluxo de autenticação; após o login, troca para a tela principal.
+/// exibe o fluxo de autenticação; após o login, abre a Explore (home) com sua
+/// própria injeção via `GroupCoordinator`.
 private struct RootView: View {
     let appWorker: AppWorker
     @ObservedObject private var session: UserSessionService
@@ -31,7 +32,7 @@ private struct RootView: View {
     var body: some View {
         Group {
             if session.isLoggedIn {
-                MainView(session: session)
+                CoordinateView(coordinator: appWorker.makeGroupCoordinator())
             } else {
                 CoordinateView(coordinator: appWorker.makeAuthCoordinator())
             }
