@@ -15,7 +15,7 @@ struct EmailValidationView: View {
                 Text("Valide seu e-mail")
                     .font(.largeTitle.bold())
 
-                Text("Enviamos um código de \(EmailValidationViewModel.codeLength) dígitos para \(viewModel.email).")
+                Text("Enviamos um código de \(EmailValidationViewModel.codeLength) dígitos para \(viewModel.email.value).")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

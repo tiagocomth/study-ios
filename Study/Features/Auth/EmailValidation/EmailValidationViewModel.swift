@@ -8,8 +8,8 @@ import Combine
 
 @MainActor
 final class EmailValidationViewModel: ObservableObject {
-    /// Quantidade de dígitos esperada no código de validação.
-    static let codeLength = 5
+    /// Quantidade de dígitos esperada no código — regra na entidade `PasswordResetCode`.
+    static var codeLength: Int { PasswordResetCode.length }
 
     @Published var code = "" {
         didSet {
@@ -21,18 +21,17 @@ final class EmailValidationViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    let email: String
+    let email: Email
     private let worker: EmailValidationWorkerProtocol
-    private let session: UserSessionProtocol
 
-    init(email: String, worker: EmailValidationWorkerProtocol, session: UserSessionProtocol) {
+    init(email: Email, worker: EmailValidationWorkerProtocol) {
         self.email = email
         self.worker = worker
-        self.session = session
     }
 
+    /// Habilita o botão — regra (código válido) definida pelo Worker.
     var isCodeComplete: Bool {
-        code.count == Self.codeLength
+        worker.isCodeValid(code)
     }
 
     func validate() {
@@ -42,10 +41,9 @@ final class EmailValidationViewModel: ObservableObject {
 
         Task {
             do {
-                let response = try await worker.validate(email: Email(value: email), code: code)
-                // Código validado: cria/loga o usuário. O root do app observa o
-                // `UserSessionService` e troca para a tela principal.
-                session.startSession(user: response.user, token: response.token)
+                // O Worker valida o código, confirma no backend e inicia a sessão.
+                // O root do app observa o `UserSessionService` e troca de tela.
+                try await worker.validate(email: email, code: code)
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -59,7 +57,7 @@ final class EmailValidationViewModel: ObservableObject {
 
         Task {
             do {
-                try await worker.resendCode(email: Email(value: email))
+                try await worker.resendCode(email: email)
             } catch {
                 errorMessage = error.localizedDescription
             }
