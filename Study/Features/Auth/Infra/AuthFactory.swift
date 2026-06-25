@@ -44,7 +44,7 @@ final class AuthFactory {
         return RegisterView(viewModel: viewModel)
     }
 
-    func makeEmailValidateView(email: String) -> some View {
+    func makeEmailValidateView(email: Email) -> some View {
         let viewModel = makeEmailValidateVM(email: email)
         return EmailValidationView(viewModel: viewModel)
     }
@@ -56,8 +56,7 @@ extension AuthFactory {
     private func makeLoginVM() -> LoginViewModel {
 
         let viewModel = LoginViewModel(
-            worker: LoginWorker(service: LoginService(apiClient: apiClient)),
-            session: session
+            worker: LoginWorker(service: LoginService(apiClient: apiClient), session: session)
         )
         viewModel.coordinator = authCoordinator
         return viewModel
@@ -95,11 +94,13 @@ extension AuthFactory {
         return viewModel
     }
 
-    private func makeEmailValidateVM(email: String) -> EmailValidationViewModel {
+    private func makeEmailValidateVM(email: Email) -> EmailValidationViewModel {
         EmailValidationViewModel(
             email: email,
-            worker: EmailValidationWorker(service: EmailValidationService(apiClient: apiClient)),
-            session: session
+            worker: EmailValidationWorker(
+                service: EmailValidationService(apiClient: apiClient),
+                session: session
+            )
         )
     }
 }
