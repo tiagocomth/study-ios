@@ -5,12 +5,12 @@
 
 import Foundation
 
-struct StudyGroup {
-    let id: UUID
+struct StudyGroup: Identifiable {
+    let id: String
+    let ownerId: String
     let name: String
     let description: String?
+    let isPrivate: Bool
+    let maxMembers: Int
     let createdAt: Date
-    let password: String?
-    let adminName: String
-    let users: [User]
 }
