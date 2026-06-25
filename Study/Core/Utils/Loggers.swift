@@ -55,6 +55,10 @@ final class ConnectivityLogger: DomainLogger, @unchecked Sendable {
     init() { super.init(category: "Connectivity") }
 }
 
+final class AppLifecycleLogger: DomainLogger, @unchecked Sendable {
+    init() { super.init(category: "AppLifecycle") }
+}
+
 final class CategoryLogger: DomainLogger, @unchecked Sendable {
     init() { super.init(category: "Category") }
 }
