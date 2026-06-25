@@ -25,23 +25,17 @@ final class ProfileFactory {
     }
     
     func makePremiumView() -> some View {
-        let worker = PremiumWorker(paymentService: paymentService, userSession: userSession)
-        let vm = PremiumViewModel(worker: worker)
-        vm.coordinator = profileCoordinator
+        let vm = makePremiumVM()
         return PremiumView(viewModel: vm)
     }
     
     func makeLogoutConfirmationView() -> some View {
-        let vm = LogoutConfirmationViewModel(userSession: userSession)
-        vm.coordinator = profileCoordinator
+        let vm = makeLogoutConfirmationVM()
         return LogoutConfirmationView(viewModel: vm)
     }
     
     func makeEditProfileView() -> some View {
-        let service = ProfileService(apiClient: apiClient)
-        let worker = EditProfileWorker(service: service, userSession: userSession)
-        let vm = EditProfileViewModel(worker: worker)
-        vm.coordinator = profileCoordinator
+        let vm = makeEditProfileVM()
         return EditProfileView(viewModel: vm)
     }
 }
@@ -52,6 +46,27 @@ extension ProfileFactory {
         let service = ProfileService(apiClient: apiClient)
         let worker = ProfileWorker(service: service, userSession: userSession)
         let vm = ProfileViewModel(worker: worker)
+        vm.coordinator = profileCoordinator
+        return vm
+    }
+    
+    private func makePremiumVM() -> PremiumViewModel {
+        let worker = PremiumWorker(paymentService: paymentService, userSession: userSession)
+        let vm = PremiumViewModel(worker: worker)
+        vm.coordinator = profileCoordinator
+        return vm
+    }
+    
+    private func makeLogoutConfirmationVM() -> LogoutConfirmationViewModel {
+        let vm = LogoutConfirmationViewModel(userSession: userSession)
+        vm.coordinator = profileCoordinator
+        return vm
+    }
+    
+    private func makeEditProfileVM() -> EditProfileViewModel {
+        let service = ProfileService(apiClient: apiClient)
+        let worker = EditProfileWorker(service: service, userSession: userSession)
+        let vm = EditProfileViewModel(worker: worker)
         vm.coordinator = profileCoordinator
         return vm
     }
