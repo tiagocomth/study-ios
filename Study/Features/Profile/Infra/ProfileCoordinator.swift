@@ -14,18 +14,6 @@ protocol ProfileCoordinatorProtocol: AnyObject {
     func dismissEditProfile()
 }
 
-protocol PremiumCoordinatorProtocol: AnyObject {
-    func dismissPremium()
-}
-
-protocol LogoutConfirmationCoordinatorProtocol: AnyObject {
-    func dismissLogoutConfirmation()
-}
-
-protocol EditProfileCoordinatorProtocol: AnyObject {
-    func dismissEditProfile()
-}
-
 final class ProfileCoordinator: Coordinator {
     
     var navigationController: NavigationController = .init()

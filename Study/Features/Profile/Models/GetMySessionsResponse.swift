@@ -8,7 +8,7 @@
 import Foundation
 
 struct GetMySessionsResponse: Decodable {
-    let user: GetProfileResponse
+    let user: UserProfileDTO
     let sessions: [SessionDTO]
 }
 

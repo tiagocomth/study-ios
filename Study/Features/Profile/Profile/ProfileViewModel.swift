@@ -14,8 +14,7 @@ final class ProfileViewModel: ObservableObject {
 
     @Published var isLoading: Bool = false
     @Published var errorMessage: String? = nil
-    @Published var profile: GetProfileResponse? = nil
-    @Published var sessions: [Session] = []
+    @Published var profile: Profile? = nil
 
     init(worker: ProfileWorkerProtocol) {
         self.worker = worker
@@ -26,13 +25,8 @@ final class ProfileViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            async let profileTask = worker.getMyProfile()
-            async let sessionsTask = worker.getSessions()
-
-            let (profileResult, sessionsResult) = try await (profileTask, sessionsTask)
-
-            self.profile = profileResult.data
-            self.sessions = sessionsResult.sessions.map { $0.toDomain() }
+            let result = try await worker.getMyProfile()
+            self.profile = result
         } catch {
             self.errorMessage = error.localizedDescription
         }

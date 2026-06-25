@@ -6,6 +6,10 @@
 import Foundation
 import Combine
 
+protocol EditProfileCoordinatorProtocol: AnyObject {
+    func dismissEditProfile()
+}
+
 @MainActor
 final class EditProfileViewModel: ObservableObject {
     
@@ -22,15 +26,14 @@ final class EditProfileViewModel: ObservableObject {
         self.worker = worker
     }
 
-    
     func loadData() async {
         isLoading = true
         errorMessage = nil
 
         do {
             let profileResponse = try await worker.getMyProfile()
-            self.name = profileResponse.data.name
-            if let photoStr = profileResponse.data.photoId, let photoInt = Int(photoStr) {
+            self.name = profileResponse.name
+            if let photoStr = profileResponse.photoId, let photoInt = Int(photoStr) {
                 self.photoId = photoInt
             }
         } catch {
@@ -54,6 +57,8 @@ final class EditProfileViewModel: ObservableObject {
         }
 
         isLoading = false
+        // Analisar sobre a volta do isSuccess para false
+        // Visto que a ViewModel é criada na Factory, e se o usuário clicar de novo o estado estará persistido como success = true
     }
 
     func dismiss() {

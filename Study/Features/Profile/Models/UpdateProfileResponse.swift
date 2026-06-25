@@ -9,5 +9,5 @@ import Foundation
 
 struct UpdateProfileResponse: Decodable {
     let message: String
-    let data: GetProfileResponse
+    let data: UserProfileDTO
 }

@@ -1,14 +1,13 @@
 //
-//  GetProfileResponse.swift
+//  UserProfileDTO.swift
 //  Study
 //
-//  Created by Breno Marques on 23/06/26.
+//  Created by Breno Marques on 25/06/26.
 //
 
 import Foundation
 
-
-struct GetProfileResponse: Decodable {
+struct UserProfileDTO: Decodable {
     let userId: String
     let name: String
     let isPremium: Bool

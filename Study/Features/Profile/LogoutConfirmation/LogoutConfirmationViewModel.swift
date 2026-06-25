@@ -8,6 +8,10 @@
 import Foundation
 import Combine
 
+protocol LogoutConfirmationCoordinatorProtocol: AnyObject {
+    func dismissLogoutConfirmation()
+}
+
 final class LogoutConfirmationViewModel: ObservableObject {
     
     weak var coordinator: LogoutConfirmationCoordinatorProtocol?

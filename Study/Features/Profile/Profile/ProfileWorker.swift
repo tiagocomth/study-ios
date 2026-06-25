@@ -6,10 +6,8 @@
 import Foundation
 
 protocol ProfileWorkerProtocol {
-    func updateProfile(request: UpdateProfileRequest) async throws(NetworkError) -> GetProfileResponse
-    func getProfile(id: String) async throws(NetworkError) -> UpdateProfileResponse
-    func getMyProfile() async throws(NetworkError) -> UpdateProfileResponse
-    func getSessions() async throws(NetworkError) -> GetMySessionsResponse
+    var currentUser: User? { get }
+    func getMyProfile() async throws(NetworkError) -> Profile
     func logout()
 }
 
@@ -17,7 +15,7 @@ final class ProfileWorker: ProfileWorkerProtocol {
     private let service: ProfileServiceProtocol
     private let userSession: UserSessionProtocol
 
-    private var currentUser: User? {
+    var currentUser: User? {
         userSession.currentUser
     }
 
@@ -26,48 +24,61 @@ final class ProfileWorker: ProfileWorkerProtocol {
         self.userSession = userSession
     }
 
-    func updateProfile(request: UpdateProfileRequest) async throws(NetworkError) -> GetProfileResponse {
-        let response = try await service.updateProfile(request: request)
-        
-        let updatedUser = User(
-            id: response.userId,
-            name: response.name,
-            photo: response.photoId,
-            individualHoursTotal: currentUser?.individualHoursTotal ?? 0.0,
-            groupHoursTotal: currentUser?.groupHoursTotal ?? 0.0
-        )
-        userSession.update(user: updatedUser)
-        return response
-    }
-
-    func getProfile(id: String) async throws(NetworkError) -> UpdateProfileResponse {
-        let response = try await service.getProfile(id: id)
-        
-        if response.data.userId == currentUser?.id {
-            let updatedUser = User(
-                id: response.data.userId,
-                name: response.data.name,
-                photo: response.data.photoId,
-                individualHoursTotal: userSession.currentUser?.individualHoursTotal ?? 0.0,
-                groupHoursTotal: userSession.currentUser?.groupHoursTotal ?? 0.0
-            )
-            userSession.update(user: updatedUser)
-        }
-        return response
-    }
-
-    func getMyProfile() async throws(NetworkError) -> UpdateProfileResponse {
-        guard let userId = currentUser?.id else {
+    func getMyProfile() async throws(NetworkError) -> Profile {
+        guard let userId = userSession.currentUser?.id else {
             throw NetworkError.unauthorized(message: "Nenhum usuário logado.")
         }
-        return try await getProfile(id: userId)
-    }
-
-    func getSessions() async throws(NetworkError) -> GetMySessionsResponse {
-        return try await service.getSessions()
+        
+        let profileDTO = try await service.getProfile(id: userId)
+        let sessionsResponse = try await service.getSessions()
+        
+        let updatedUser = User(
+            id: profileDTO.userId,
+            name: profileDTO.name,
+            photo: profileDTO.photoId,
+            individualHoursTotal: userSession.currentUser?.individualHoursTotal ?? 0.0,
+            groupHoursTotal: userSession.currentUser?.groupHoursTotal ?? 0.0
+        )
+        userSession.update(user: updatedUser)
+        
+        let sessions = sessionsResponse.sessions.map { $0.toDomain() }
+        let (todayHours, weekHours, monthHours) = calculateHours(for: sessions)
+        
+        return Profile(
+            id: profileDTO.userId,
+            name: profileDTO.name,
+            isPremium: profileDTO.isPremium,
+            photoId: profileDTO.photoId,
+            hoursStudiedToday: todayHours,
+            hoursStudiedThisWeek: weekHours,
+            hoursStudiedThisMonth: monthHours,
+            sessions: sessions
+        )
     }
 
     func logout() {
         userSession.logout()
+    }
+    
+    // MARK: - Study Hours Calculation
+    
+    private func calculateHours(for sessions: [Session]) -> (today: Double, week: Double, month: Double) {
+        let calendar = Calendar.current
+        let now = Date()
+        
+        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: now),
+              let monthInterval = calendar.dateInterval(of: .month, for: now) else {
+            return (0.0, 0.0, 0.0)
+        }
+        
+        let todaySessions = sessions.filter { calendar.isDateInToday($0.startedAt) }
+        let weekSessions = sessions.filter { $0.startedAt >= weekInterval.start && $0.startedAt < weekInterval.end }
+        let monthSessions = sessions.filter { $0.startedAt >= monthInterval.start && $0.startedAt < monthInterval.end }
+        
+        let todayHours = Double(todaySessions.reduce(0) { $0 + $1.duration }) / 3600.0
+        let weekHours = Double(weekSessions.reduce(0) { $0 + $1.duration }) / 3600.0
+        let monthHours = Double(monthSessions.reduce(0) { $0 + $1.duration }) / 3600.0
+        
+        return (todayHours, weekHours, monthHours)
     }
 }

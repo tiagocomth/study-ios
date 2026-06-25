@@ -8,8 +8,8 @@
 import Foundation
 
 protocol ProfileServiceProtocol {
-    func updateProfile(request: UpdateProfileRequest) async throws(NetworkError) -> GetProfileResponse
-    func getProfile(id: String) async throws(NetworkError) -> UpdateProfileResponse
+    func updateProfile(request: UpdateProfileRequest) async throws(NetworkError) -> UpdateProfileResponse
+    func getProfile(id: String) async throws(NetworkError) -> UserProfileDTO
     func getSessions() async throws(NetworkError) -> GetMySessionsResponse
 }
 
@@ -21,12 +21,12 @@ final class ProfileService: ProfileServiceProtocol {
         self.apiClient = apiClient
     }
     
-    func updateProfile(request: UpdateProfileRequest) async throws(NetworkError) -> GetProfileResponse {
+    func updateProfile(request: UpdateProfileRequest) async throws(NetworkError) -> UpdateProfileResponse {
         let endpoint = ProfileEndpoint.updateProfile(request)
         return try await apiClient.request(endpoint)
     }
     
-    func getProfile(id: String) async throws(NetworkError) -> UpdateProfileResponse {
+    func getProfile(id: String) async throws(NetworkError) -> UserProfileDTO {
         let endpoint = ProfileEndpoint.getProfile(id: id)
         return try await apiClient.request(endpoint)
     }

@@ -8,6 +8,10 @@
 import Foundation
 import Combine
 
+protocol PremiumCoordinatorProtocol: AnyObject {
+    func dismissPremium()
+}
+
 final class PremiumViewModel: ObservableObject {
     
     weak var coordinator: PremiumCoordinatorProtocol?
