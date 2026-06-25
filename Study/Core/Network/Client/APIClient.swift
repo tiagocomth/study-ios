@@ -99,7 +99,10 @@ extension APIClient {
             let decoder = JSONDecoder()
             return try decoder.decode(T.self, from: data)
         } catch {
-            throw NetworkError.decodingFailed(message: "Failed to decode data to model.")
+            // Surfaces the underlying `DecodingError` (missing key, type mismatch…)
+            // so the exact field that broke shows up in logs and error messages.
+            logger?.logFailure(error, for: request)
+            throw NetworkError.decodingFailed(message: "Failed to decode data to model: \(error)")
         }
 
     }
