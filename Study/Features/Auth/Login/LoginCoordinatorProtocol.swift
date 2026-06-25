@@ -9,4 +9,5 @@ import Foundation
 
 protocol LoginCoordinatorProtocol: AnyObject {
     func navigateToForgotPassword()
+    func navigateToRegister()
 }

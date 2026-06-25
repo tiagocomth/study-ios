@@ -23,8 +23,8 @@ final class CodeWorker: CodeWorkerProtocol {
             throw CodeWorkerError.invalidCode
         }
 
-        let session = try await service.validatePasswordResetCode(code.value)
-        sessionStore.save(session)
+        let otp = try await service.validatePasswordResetCode(code.value)
+        sessionStore.save(otp)
     }
 }
 

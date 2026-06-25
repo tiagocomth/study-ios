@@ -8,7 +8,18 @@
 import Foundation
 
 protocol APIClientProtocol {
-    func request<T: Decodable>(_ endpoint: Endpoint) async throws(NetworkError) -> T
+    /// Performs a request against `endpoint`.
+    /// - Parameter token: Bearer token for this specific call. When non-nil it
+    ///   overrides the client's `tokenProvider` (used e.g. to send a short-lived
+    ///   reset/OTP token). When nil, the client falls back to the `tokenProvider`.
+    func request<T: Decodable>(_ endpoint: Endpoint, token: String?) async throws(NetworkError) -> T
+}
+
+extension APIClientProtocol {
+    /// Convenience overload for calls that rely on the client's `tokenProvider`.
+    func request<T: Decodable>(_ endpoint: Endpoint) async throws(NetworkError) -> T {
+        try await request(endpoint, token: nil)
+    }
 }
 
 final class APIClient: APIClientProtocol {
@@ -37,9 +48,11 @@ final class APIClient: APIClientProtocol {
         self.logger = logger
     }
 
-    func request<T>(_ endpoint: any Endpoint) async throws(NetworkError) -> T where T : Decodable {
-
-        guard let request = RequestBuilder.build(endpoint, token: tokenProvider?.token) else {
+    func request<T>(_ endpoint: any Endpoint, token: String? = nil) async throws(NetworkError) -> T where T : Decodable {
+        // A per-call token (e.g. a reset/OTP token) takes precedence over the
+        // client's default token provider.
+        let resolvedToken = token ?? tokenProvider?.token
+        guard let request = RequestBuilder.build(endpoint, token: resolvedToken) else {
             throw NetworkError.requestBuildFailed(message: "Failed to create request from endpoint.")
         }
         return try await perform(request)

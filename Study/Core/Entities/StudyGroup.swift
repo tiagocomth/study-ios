@@ -1,11 +1,11 @@
 //
-//  Group.swift
+//  StudyGroup.swift
 //  Study
 //
 
 import Foundation
 
-struct Group {
+struct StudyGroup {
     let id: UUID
     let name: String
     let description: String?

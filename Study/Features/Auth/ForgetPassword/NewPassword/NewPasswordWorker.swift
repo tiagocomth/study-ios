@@ -27,11 +27,11 @@ final class NewPasswordWorker: NewPasswordWorkerProtocol {
             throw NewPasswordWorkerError.passwordsDoNotMatch
         }
 
-        guard let session = sessionStore.session else {
-            throw NewPasswordWorkerError.missingSession
+        guard let otp = sessionStore.otp else {
+            throw NewPasswordWorkerError.missingOTP
         }
 
-        try await service.updatePassword(password, session: session)
+        try await service.updatePassword(password, otp: otp)
         sessionStore.clear()
     }
 }
@@ -39,7 +39,7 @@ final class NewPasswordWorker: NewPasswordWorkerProtocol {
 enum NewPasswordWorkerError: LocalizedError {
     case invalidPassword
     case passwordsDoNotMatch
-    case missingSession
+    case missingOTP
 
     var errorDescription: String? {
         switch self {
@@ -47,8 +47,8 @@ enum NewPasswordWorkerError: LocalizedError {
             return "Invalid password."
         case .passwordsDoNotMatch:
             return "Passwords do not match."
-        case .missingSession:
-            return "Password reset session is missing."
+        case .missingOTP:
+            return "Password reset OTP is missing."
         }
     }
 }

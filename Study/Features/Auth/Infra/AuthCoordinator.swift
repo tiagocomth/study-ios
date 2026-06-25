@@ -27,6 +27,10 @@ final class AuthCoordinator: Coordinator {
             factory.makeCodeView()
         case .newPassword:
             factory.makeNewPasswordView()
+        case .register:
+            factory.makeRegisterView()
+        case .emailValidate(let email):
+            factory.makeEmailValidateView(email: email)
         }
     }
     
@@ -53,6 +57,10 @@ final class AuthCoordinator: Coordinator {
 
 extension AuthCoordinator: LoginCoordinatorProtocol {
     
+    func navigateToRegister() {
+        navigateTo(route: .register)
+    }
+
     func navigateToForgotPassword() {
         navigateTo(route: .forgotPassword)
     }
@@ -78,3 +86,10 @@ extension AuthCoordinator: NewPasswordCoordinatorProtocol {
         popToRoot()
     }
 }
+
+extension AuthCoordinator: RegisterCoordinatorProtocol {
+    func navigateToEmailValidate(email: Email) {
+        navigateTo(route: .emailValidate(email: email))
+    }
+}
+
