@@ -5,7 +5,7 @@
 
 import Foundation
 import Combine
-////NEXT1:LEMBRE REGRA DE NEGOCIO É NO WORKER E N NA VM NAO QUERO NENHUMA REGRA DE NEGOCIO NA VM 
+
 final class CreateGroupViewModel: ObservableObject {
     weak var coordinator: GroupCoordinator?
     private let worker: CreateGroupWorkerProtocol
@@ -14,33 +14,25 @@ final class CreateGroupViewModel: ObservableObject {
     @Published var groupDescription = ""
     @Published var password = ""
     @Published var isPrivate = false
-    @Published var maxMembers = 10
+    @Published var maxMembers: Int
     @Published private(set) var isLoading = false
     @Published var errorMessage: String?
 
-    /// Faixa de membros permitida no grupo. O plano gratuito é limitado a 10
-    /// membros pelo backend; ampliar quando o gating de premium estiver ligado.
-    let maxMembersRange = 2...10
+    /// Faixa de membros — regra definida pelo Worker.
+    var maxMembersRange: ClosedRange<Int> { worker.maxMembersRange }
 
+    /// Habilita o botão de criar — regra definida pelo Worker.
     var canCreate: Bool {
-        let hasName = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        // Grupo privado exige senha com pelo menos 4 caracteres.
-        let hasValidPassword = !isPrivate || password.count >= 4
-        return hasName && hasValidPassword && !isLoading
+        worker.canCreate(name: name, isPrivate: isPrivate, password: password) && !isLoading
     }
 
     init(worker: CreateGroupWorkerProtocol) {
         self.worker = worker
+        self.maxMembers = worker.maxMembersRange.upperBound
     }
 
     func create() {
         guard !isLoading else { return }
-
-        let name = name
-        let description = groupDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Grupo privado = grupo com senha (o backend deriva `isPrivate` daí).
-        let password = isPrivate ? password : nil
-        let maxMembers = maxMembers
 
         isLoading = true
         errorMessage = nil
@@ -49,9 +41,10 @@ final class CreateGroupViewModel: ObservableObject {
             do {
                 _ = try await worker.createGroup(
                     name: name,
-                    description: description.isEmpty ? nil : description,
-                    maxMembers: maxMembers,
-                    password: password
+                    description: groupDescription,
+                    isPrivate: isPrivate,
+                    password: password,
+                    maxMembers: maxMembers
                 )
                 await MainActor.run {
                     isLoading = false

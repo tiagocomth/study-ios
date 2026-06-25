@@ -6,7 +6,14 @@
 import Foundation
 
 protocol CreateGroupWorkerProtocol {
-    func createGroup(name: String, description: String?, maxMembers: Int?, password: String?) async throws -> StudyGroup
+    /// Faixa de membros permitida (plano gratuito = até 10).
+    var maxMembersRange: ClosedRange<Int> { get }
+
+    /// Regra que habilita a criação a partir do que está preenchido na tela.
+    func canCreate(name: String, isPrivate: Bool, password: String) -> Bool
+
+    /// Valida, normaliza as entradas e cria o grupo no backend.
+    func createGroup(name: String, description: String, isPrivate: Bool, password: String, maxMembers: Int) async throws -> StudyGroup
 }
 
 final class CreateGroupWorker: CreateGroupWorkerProtocol {
@@ -15,20 +22,33 @@ final class CreateGroupWorker: CreateGroupWorkerProtocol {
     /// Limites de senha definidos pela API (`CreateGroupDto`).
     private let passwordRange = 4...60
 
+    /// Plano gratuito é limitado a 10 membros pelo backend.
+    let maxMembersRange = 2...10
+
     init(service: CreateGroupServiceProtocol) {
         self.service = service
     }
 
-    func createGroup(name: String, description: String?, maxMembers: Int?, password: String?) async throws -> StudyGroup {
+    func canCreate(name: String, isPrivate: Bool, password: String) -> Bool {
+        let hasName = !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        // Grupo privado exige senha com pelo menos 4 caracteres.
+        let hasValidPassword = !isPrivate || password.count >= 4
+        return hasName && hasValidPassword
+    }
+
+    func createGroup(name: String, description: String, isPrivate: Bool, password: String, maxMembers: Int) async throws -> StudyGroup {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else {
             throw CreateGroupWorkerError.emptyName
         }
 
-        // `isPrivate` é derivado no backend pela presença de senha. Quando há senha,
-        // ela precisa ter de 4 a 60 caracteres (`CreateGroupDto`).
+        let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalDescription = trimmedDescription.isEmpty ? nil : trimmedDescription
+
+        // Grupo privado = grupo com senha (o backend deriva `isPrivate` daí).
+        // Quando há senha, ela precisa ter de 4 a 60 caracteres (`CreateGroupDto`).
         var finalPassword: String?
-        if let password, !password.isEmpty {
+        if isPrivate {
             guard passwordRange.contains(password.count) else {
                 throw CreateGroupWorkerError.invalidPassword
             }
@@ -38,7 +58,7 @@ final class CreateGroupWorker: CreateGroupWorkerProtocol {
         // TODO: validar máximo de grupos e regras de premium.
         return try await service.createGroup(
             name: trimmedName,
-            description: description,
+            description: finalDescription,
             maxMembers: maxMembers,
             password: finalPassword
         )
