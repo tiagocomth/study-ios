@@ -39,8 +39,7 @@ final class AppLifecycleService: AppLifecycleServiceProtocol {
         }
     }
 
-    func updateState(_ state: ScenePhase) {
-        let state = AppLifecycleState.make(scenePhase: state)
+    func updateState(_ state: AppLifecycleState) {
         guard currentState != state else { return }
         currentState = state
 

@@ -9,5 +9,5 @@ import SwiftUI
 protocol AppLifecycleServiceProtocol: AnyObject {
     var stateChanges: AsyncStream<AppLifecycleState> { get }
 
-    func updateState(_ state: ScenePhase)
+    func updateState(_ state: AppLifecycleState)
 }

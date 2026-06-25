@@ -11,12 +11,16 @@ enum AppLifecycleState: Equatable, Sendable {
     case background
     case unknown
     
-    static func make(scenePhase: ScenePhase) -> Self {
+    init(_ scenePhase: ScenePhase) {
         switch scenePhase {
-        case .active: return .active
-        case .inactive: return .inactive
-        case .background: return .background
-        @unknown default: return .unknown
+        case .active:
+            self = .active
+        case .inactive:
+            self = .inactive
+        case .background:
+            self = .background
+        @unknown default:
+            self = .inactive
         }
     }
 }
