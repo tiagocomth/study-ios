@@ -27,7 +27,7 @@ final class AppWorker {
     private let categoryLocal: CategoryStoreLocalProtocol
     private let studySessionTracker: StudySessionTrackerLocalProtocol
     private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
-    private let offlineOperationSender: OfflineOperationSenderRemoteProtocol
+    private let offlineOperationSender: OfflineOperationSenderProtocol
     private let operationSyncService: OperationSyncServiceProtocol
     private let categorySyncService: CategorySyncServiceProtocol
     private let now: @Sendable () -> Date
@@ -49,19 +49,19 @@ final class AppWorker {
         )
         let currentUserId = { session.currentUserId }
 
-        let categoryRemote = CategoryRemote(apiClient: apiClient)
-        let studySessionRemote = StudySessionRemote(apiClient: apiClient)
+        let categoryAPI = CategoryAPI(apiClient: apiClient)
+        let studySessionAPI = StudySessionAPI(apiClient: apiClient)
         let categoryLocal = CategoryStoreLocal(context: modelContainer.mainContext)
         let studySessionTracker = StudySessionTrackerLocal()
         let offlineOperationQueue = OfflineOperationQueueLocal()
-        let offlineOperationSender = OfflineOperationSenderRemote(studySessionRemoteService: studySessionRemote, categoryService: categoryRemote)
+        let offlineOperationSender = OfflineOperationSender(studySessionAPI: studySessionAPI, categoryAPI: categoryAPI)
         let operationSyncService = OperationSyncService(
             offlineOperationSender: offlineOperationSender,
             offlineOperationQueue: offlineOperationQueue,
             currentUserId: currentUserId
         )
         let categorySyncService = CategorySyncService(
-            categoryRemote: categoryRemote,
+            categoryAPI: categoryAPI,
             categoryLocal: categoryLocal,
             offlineOperationQueue: offlineOperationQueue
         )
