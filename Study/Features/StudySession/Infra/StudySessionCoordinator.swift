@@ -5,12 +5,28 @@
 
 import SwiftUI
 
-final class StudySessionCoordinator {
+enum StudySessionRouter: Hashable, Identifiable {
+    var id: Self { self }
+    
+    case none
+}
+
+final class StudySessionCoordinator: Coordinator {
+    var navigationController: NavigationController = .init()
     private let factory: StudySessionFactory
 
     init(factory: StudySessionFactory) {
         self.factory = factory
+        factory.coordinator = self
     }
 
-    // TODO: navegação do flow
+    var rootView: some View {
+        factory.makeStudySessionView()
+    }
+
+    func coordinate(to route: StudySessionRouter) -> some View {
+        switch route {
+        case .none: EmptyView()
+        }
+    }
 }
