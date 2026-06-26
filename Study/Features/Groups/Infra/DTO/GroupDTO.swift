@@ -44,13 +44,19 @@ struct GroupDTO: Decodable {
         return formatter
     }()
 
-    func toDomain() -> StudyGroup {
+    /// Converte para a entidade de domínio.
+    /// - Parameter privacyOverride: o backend hoje **não devolve** `isPrivate` no
+    ///   payload, mesmo nas queries filtradas. Quando a busca usa um filtro de
+    ///   privacidade, o servidor garante que todos os grupos batem com ele, então
+    ///   passamos esse valor aqui para carimbar o grupo corretamente. `nil`
+    ///   (filtro "Todos") mantém o valor decodificado (default `false`).
+    func toDomain(privacyOverride: Bool? = nil) -> StudyGroup {
         StudyGroup(
             id: groupId,
             ownerId: ownerId,
             name: name,
             description: description,
-            isPrivate: isPrivate,
+            isPrivate: privacyOverride ?? isPrivate,
             maxMembers: maxMembers,
             createdAt: createdAt
         )

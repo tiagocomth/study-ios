@@ -11,8 +11,8 @@ struct ExploreGroupsView: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker("Privacidade", selection: $viewModel.privacyScope) {
-                ForEach(ExploreGroupsViewModel.PrivacyScope.allCases) { scope in
-                    Text(scope.title).tag(scope)
+                ForEach(GroupPrivacyFilter.allCases) { filter in
+                    Text(filter.title).tag(filter)
                 }
             }
             .pickerStyle(.segmented)
@@ -70,6 +70,18 @@ struct ExploreGroupsView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+// MARK: - Apresentação do filtro
+private extension GroupPrivacyFilter {
+    /// Texto exibido no segmented control (responsabilidade de View).
+    var title: String {
+        switch self {
+        case .all: "Todos"
+        case .public: "Público"
+        case .private: "Privado"
         }
     }
 }

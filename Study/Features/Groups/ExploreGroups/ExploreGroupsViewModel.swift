@@ -8,30 +8,6 @@ import Combine
 
 @MainActor
 final class ExploreGroupsViewModel: ObservableObject {
-    /// Filtro de privacidade do segmented control.
-    enum PrivacyScope: CaseIterable, Identifiable {
-        case all, `public`, `private`
-
-        var id: Self { self }
-
-        var title: String {
-            switch self {
-            case .all: "Todos"
-            case .public: "Público"
-            case .private: "Privado"
-            }
-        }
-
-        /// Valor enviado à API (`nil` = sem filtro).
-        var isPrivate: Bool? {
-            switch self {
-            case .all: nil
-            case .public: false
-            case .private: true
-            }
-        }
-    }
-
     weak var coordinator: GroupCoordinator?
     private let worker: ExploreGroupsWorkerProtocol
 
@@ -40,12 +16,17 @@ final class ExploreGroupsViewModel: ObservableObject {
     @Published private(set) var isLoadingMore = false
     @Published var errorMessage: String?
     @Published var searchText = ""
-    @Published var privacyScope: PrivacyScope = .all
+    @Published var privacyScope: GroupPrivacyFilter = .all
 
     private var cancellables = Set<AnyCancellable>()
     private var hasLoaded = false
     private var loadTask: Task<Void, Never>?
     private var pageTask: Task<Void, Never>?
+
+    /// Identidade da carga atual. Toda nova busca (filtro, texto ou reload)
+    /// incrementa o token; só a resposta do token mais recente é aplicada,
+    /// descartando respostas obsoletas ou fora de ordem.
+    private var loadToken = 0
 
     /// Total de itens disponíveis no backend para o filtro atual.
     private var totalCount = 0
@@ -78,20 +59,25 @@ final class ExploreGroupsViewModel: ObservableObject {
 
     /// Recarrega quando o texto (com debounce) ou o segmento de privacidade muda.
     private func bindFilters() {
-        $searchText
+        // Texto: aplica debounce para não disparar a cada tecla.
+        let search = $searchText
             .dropFirst()
             .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
             .removeDuplicates()
-            .sink { [weak self] _ in
-                self?.loadGroups()
-            }
-            .store(in: &cancellables)
+            .map { _ in () }
 
-        // Troca de segmento recarrega na hora (sem debounce).
-        $privacyScope
+        // Segmento: recarrega na troca (sem debounce).
+        let privacy = $privacyScope
             .dropFirst()
             .removeDuplicates()
-            .sink { [weak self] _ in
+            .map { _ in () }
+
+        // `receive(on:)` garante que o `loadGroups()` rode no próximo ciclo do
+        // main actor, e não de forma síncrona durante a atualização da view
+        // (origem do warning "Publishing changes from within view updates").
+        Publishers.Merge(search, privacy)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
                 self?.loadGroups()
             }
             .store(in: &cancellables)
@@ -100,27 +86,32 @@ final class ExploreGroupsViewModel: ObservableObject {
     /// Primeira página: substitui a lista. Usado na carga inicial, na troca de
     /// filtro e no reload (ex.: após criar um grupo).
     private func loadGroups() {
-        let query = currentQuery
-
         // Cancela cargas em voo (primeira página ou paginação) para não aplicar
         // resultado obsoleto.
         pageTask?.cancel()
         loadTask?.cancel()
+        loadToken += 1
+        let token = loadToken
+        let searchText = searchText
+        let privacy = privacyScope
+
         // As mutações de `@Published` ficam dentro da `Task` (próximo turno do main
         // actor) para não publicar durante a atualização da view (warning roxo).
         loadTask = Task {
             isLoading = true
             errorMessage = nil
             do {
-                let page = try await worker.exploreGroups(filter: query.term, isPrivate: query.isPrivate, page: 1)
-                // Só aplica se o filtro (texto + privacidade) ainda é o atual.
-                guard !Task.isCancelled, query == currentQuery else { return }
+                let page = try await worker.exploreGroups(searchText: searchText, privacy: privacy, page: 1)
+                // Só aplica a resposta se esta ainda for a carga mais recente.
+                guard token == loadToken else { return }
                 groups = page.groups
                 totalCount = page.total
                 currentPage = 1
                 isLoading = false
+            } catch is CancellationError {
+                // Cancelamento (troca de filtro) é silencioso — outra carga assume.
             } catch {
-                guard !Task.isCancelled, query == currentQuery else { return }
+                guard token == loadToken else { return }
                 // Em erro, limpa a lista para não exibir itens de um filtro anterior.
                 groups = []
                 totalCount = 0
@@ -142,16 +133,18 @@ final class ExploreGroupsViewModel: ObservableObject {
     private func loadNextPage() {
         guard canLoadMore, !isLoading, !isLoadingMore else { return }
 
-        let query = currentQuery
         let nextPage = currentPage + 1
+        let token = loadToken
+        let searchText = searchText
+        let privacy = privacyScope
 
         pageTask?.cancel()
         pageTask = Task {
             isLoadingMore = true
             do {
-                let page = try await worker.exploreGroups(filter: query.term, isPrivate: query.isPrivate, page: nextPage)
-                // Descarta se o filtro mudou no meio do caminho.
-                guard !Task.isCancelled, query == currentQuery else {
+                let page = try await worker.exploreGroups(searchText: searchText, privacy: privacy, page: nextPage)
+                // Descarta se o filtro mudou (token avançou) no meio do caminho.
+                guard token == loadToken else {
                     isLoadingMore = false
                     return
                 }
@@ -162,20 +155,9 @@ final class ExploreGroupsViewModel: ObservableObject {
                 currentPage = nextPage
                 isLoadingMore = false
             } catch {
-                // Falha de paginação não derruba a lista já carregada.
+                // Falha/cancelamento de paginação não derruba a lista já carregada.
                 isLoadingMore = false
             }
         }
-    }
-
-    /// Identidade do filtro atual (termo + privacidade), usada para descartar
-    /// respostas obsoletas. A normalização do termo é regra do Worker.
-    private struct Query: Equatable {
-        let term: String?
-        let isPrivate: Bool?
-    }
-
-    private var currentQuery: Query {
-        Query(term: worker.normalize(searchText: searchText), isPrivate: privacyScope.isPrivate)
     }
 }
