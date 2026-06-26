@@ -149,9 +149,21 @@ private extension AppWorker {
     private func syncStudySession() async {
         do {
             await restoreLocal()
-            try await operationSyncService.sync()
+            let result = try await operationSyncService.sync()
+            handleOperationSyncResult(result)
         } catch {
             OfflineOperationQueueLogger().error("Failed to sync study session operations: \(error.localizedDescription)")
+        }
+    }
+
+    private func handleOperationSyncResult(_ result: OperationSyncResult) {
+        switch result {
+        case .completed:
+            break
+        case .failure:
+            OfflineOperationQueueLogger().info("Study session operation sync stopped after a retryable failure")
+        case .alreadyRunning:
+            OfflineOperationQueueLogger().debug("Study session operation sync skipped because a sync is already running")
         }
     }
 

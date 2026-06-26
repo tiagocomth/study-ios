@@ -7,5 +7,5 @@ import Foundation
 
 @MainActor
 protocol OperationSyncServiceProtocol {
-    func sync() async throws
+    func sync() async throws -> OperationSyncResult
 }
