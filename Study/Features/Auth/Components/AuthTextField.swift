@@ -15,23 +15,41 @@ struct AuthTextField: View {
 
     @Binding var text: String
 
+    // Change magic numbers
     var body: some View {
-
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
 
             Text(title)
                 .font(.headline)
+                .fontWeight(.semibold)
 
-            Group {
-                if isSecure {
-                    SecureField(placeholder, text: $text)
-                } else {
-                    TextField(placeholder, text: $text)
+            field
+                .textFieldStyle(.plain)
+                .padding(.horizontal, 18)
+                .frame(height: 56)
+                .background {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(nsColor: .textBackgroundColor))
                 }
-            }
-            .textFieldStyle(.roundedBorder)
-            .controlSize(.large)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.primary, lineWidth: 1.5)
+                }
+                .shadow(
+                    color: .black.opacity(0.18),
+                    radius: 5,
+                    x: 0,
+                    y: 3
+                )
+        }
+    }
 
+    @ViewBuilder
+    private var field: some View {
+        if isSecure {
+            SecureField(placeholder, text: $text)
+        } else {
+            TextField(placeholder, text: $text)
         }
     }
 }

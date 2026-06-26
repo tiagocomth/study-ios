@@ -6,22 +6,19 @@
 import SwiftUI
 
 struct LoginView: View {
-
+    
     @StateObject var viewModel: LoginViewModel
-
+    
     var body: some View {
-        GeometryReader { geometry in
-            let halfWidth = (geometry.size.width - 1) / 2
-
-            HStack(spacing: 0) {
-                leftPanel
-                    .frame(width: halfWidth)
-
-                Divider()
-
-                rightPanel
-                    .frame(width: halfWidth)
-            }
+        
+        HStack(spacing: 0) {
+            
+            leftPanel
+            
+            Divider()
+            
+            rightPanel
+            
         }
     }
 }
@@ -81,6 +78,8 @@ private extension LoginView {
                     viewModel.navigateToForgotPassword()
                 }
                 .buttonStyle(.link)
+                
+                Spacer()
 
             }
 
