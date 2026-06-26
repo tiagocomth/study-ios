@@ -9,12 +9,13 @@ final class AppCoordinator {
     
     private var authCoordinator: AuthCoordinator?
     
-    func makeAuthCoordinator(apiClient: APIClientProtocol) -> AuthCoordinator {
+    func makeAuthCoordinator(apiClient: APIClientProtocol, session: UserSessionProtocol) -> AuthCoordinator {
         guard let authCoordinator else {
-            self.authCoordinator = AuthCoordinator(factory: .init(apiClient: apiClient))
-            return self.authCoordinator!
+            let coordinator = AuthCoordinator(factory: .init(apiClient: apiClient, session: session))
+            self.authCoordinator = coordinator
+            return coordinator
         }
-        
+
         return authCoordinator
     }
 }

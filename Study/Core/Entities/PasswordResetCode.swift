@@ -6,6 +6,9 @@
 import Foundation
 
 struct PasswordResetCode: Equatable {
+    /// Quantidade de dígitos do código (OTP de 6 dígitos).
+    static let length = 6
+
     var value: String
 
     init(value: String = "") {
@@ -13,6 +16,6 @@ struct PasswordResetCode: Equatable {
     }
 
     func isValid() -> Bool {
-        value.count == 6 && value.allSatisfy(\.isNumber)
+        value.count == Self.length && value.allSatisfy(\.isNumber)
     }
 }
