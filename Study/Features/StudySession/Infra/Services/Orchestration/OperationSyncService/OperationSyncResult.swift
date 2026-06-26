@@ -7,6 +7,6 @@ import Foundation
 
 enum OperationSyncResult: Equatable {
     case completed
-    case failure
+    case stoppedOnFailure
     case alreadyRunning
 }

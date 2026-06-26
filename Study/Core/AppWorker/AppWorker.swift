@@ -29,6 +29,7 @@ final class AppWorker {
     private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
     private let offlineOperationSender: OfflineOperationSenderRemoteProtocol
     private let operationSyncService: OperationSyncServiceProtocol
+    private let categorySyncService: CategorySyncServiceProtocol
     private var appTasks: [Task<Void, Never>]
 
     init() {
@@ -57,6 +58,11 @@ final class AppWorker {
             offlineOperationQueue: offlineOperationQueue,
             currentUserId: currentUserId
         )
+        let categorySyncService = CategorySyncService(
+            categoryRemote: categoryRemote,
+            categoryLocal: categoryLocal,
+            offlineOperationQueue: offlineOperationQueue
+        )
         
         self.connectivityMonitorService = ConnectivityMonitorService()
         self.appLifecycleService = AppLifecycleService()
@@ -65,6 +71,7 @@ final class AppWorker {
         self.offlineOperationQueue = offlineOperationQueue
         self.offlineOperationSender = offlineOperationSender
         self.operationSyncService = operationSyncService
+        self.categorySyncService = categorySyncService
         self.appTasks = []
 
         // Auto-logout whenever a request comes back 401. `logout()` is
@@ -150,17 +157,18 @@ private extension AppWorker {
         do {
             await restoreLocal()
             let result = try await operationSyncService.sync()
-            handleOperationSyncResult(result)
+            try await handleOperationSyncResult(result)
         } catch {
             OfflineOperationQueueLogger().error("Failed to sync study session operations: \(error.localizedDescription)")
         }
     }
 
-    private func handleOperationSyncResult(_ result: OperationSyncResult) {
+    private func handleOperationSyncResult(_ result: OperationSyncResult) async throws {
         switch result {
         case .completed:
-            break
-        case .failure:
+            guard let userId = userSessionService.currentUserId else { return }
+            try await categorySyncService.refreshFromBackendIfQueueIsEmpty(userId: userId)
+        case .stoppedOnFailure:
             OfflineOperationQueueLogger().info("Study session operation sync stopped after a retryable failure")
         case .alreadyRunning:
             OfflineOperationQueueLogger().debug("Study session operation sync skipped because a sync is already running")
