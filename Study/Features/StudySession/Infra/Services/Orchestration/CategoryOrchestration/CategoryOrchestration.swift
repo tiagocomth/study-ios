@@ -13,7 +13,6 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
     private let currentUserId: () -> UUID?
     private let makeId: @Sendable () -> UUID
     private let now: @Sendable () -> Date
-    private var tasks: [Task<Void, Never>] = []
     
     init(
         categoryRemote: CategoryRemoteProtocol,
@@ -38,7 +37,7 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
 
         let localCategories = try categoryLocal.getAll(userId: userId)
         
-        let task = Task { @MainActor [weak self] in
+        Task { @MainActor [weak self] in
             
             guard let self else { return }
 
@@ -46,7 +45,6 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
             onBackendRefresh(backendCategories)
         }
         
-        tasks.append(task)
         return localCategories
     }
     
@@ -67,17 +65,16 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
         
         try categoryLocal.save(localCategory)
         
-        let task = Task { @MainActor [weak self] in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-            await sendCreateCategory(
-                userId: userId,
-                id: localCategory.categoryId,
+            await processCreateInBackground(
                 dto,
+                userId: userId,
+                categoryId: localCategory.categoryId,
                 onShouldRollback: onShouldRollback
             )
         }
         
-        tasks.append(task)
         return localCategory
     }
     
@@ -103,18 +100,17 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
         
         try categoryLocal.save(localCategory)
         
-        let task = Task { @MainActor [weak self] in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-            await sendUpdateCategory(
-                userId: userId,
+            await processUpdateInBackground(
                 id: id,
                 dto: dto,
+                userId: userId,
                 previousCategory: previousCategory,
                 onShouldRollback: onShouldRollback
             )
         }
         
-        tasks.append(task)
         return localCategory
     }
     
@@ -132,27 +128,25 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
         
         try categoryLocal.delete(id: id, userId: userId)
         
-        let task = Task { @MainActor [weak self] in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-            await sendDeleteCategory(
-                userId: userId,
+            await processDeleteInBackground(
                 id: id,
+                userId: userId,
                 deletedCategory: deletedCategory,
                 onShouldRollback: onShouldRollback
             )
-        }
-        
-        tasks.append(task)
-    }
-    
-    deinit {
-        for task in tasks {
-            task.cancel()
         }
     }
 }
 
 private extension CategoryOrchestration {
+    
+    func hasPendingOperations(userId: UUID) async -> Bool {
+        await offlineOperationQueue.ensureRestored(userId: userId)
+        return await offlineOperationQueue.peek(userId: userId) != nil
+    }
+
     private func refreshCategories(userId: UUID) async throws -> [StudyCategory]? {
         await categoryLocal.ensureRestored(userId: userId)
         await offlineOperationQueue.ensureRestored(userId: userId)
@@ -163,6 +157,65 @@ private extension CategoryOrchestration {
 
         try categoryLocal.saveAll(backendCategories)
         return backendCategories
+    }
+
+    func processCreateInBackground(
+        _ dto: CreateCategoryDTO,
+        userId: UUID,
+        categoryId: UUID,
+        onShouldRollback: @escaping ShouldRollback
+    ) async {
+        if await hasPendingOperations(userId: userId) {
+            try? await enqueue(.createCategory(dto), userId: userId)
+            return
+        }
+
+        await sendCreateCategory(
+            userId: userId,
+            id: categoryId,
+            dto,
+            onShouldRollback: onShouldRollback
+        )
+    }
+
+    func processUpdateInBackground(
+        id: UUID,
+        dto: UpdateCategoryDTO,
+        userId: UUID,
+        previousCategory: StudyCategory,
+        onShouldRollback: @escaping ShouldRollback
+    ) async {
+        if await hasPendingOperations(userId: userId) {
+            try? await enqueue(.updateCategory(id: id, dto: dto), userId: userId)
+            return
+        }
+
+        await sendUpdateCategory(
+            userId: userId,
+            id: id,
+            dto: dto,
+            previousCategory: previousCategory,
+            onShouldRollback: onShouldRollback
+        )
+    }
+
+    func processDeleteInBackground(
+        id: UUID,
+        userId: UUID,
+        deletedCategory: StudyCategory,
+        onShouldRollback: @escaping ShouldRollback
+    ) async {
+        if await hasPendingOperations(userId: userId) {
+            try? await enqueue(.deleteCategory(id), userId: userId)
+            return
+        }
+
+        await sendDeleteCategory(
+            userId: userId,
+            id: id,
+            deletedCategory: deletedCategory,
+            onShouldRollback: onShouldRollback
+        )
     }
     
     private func sendCreateCategory(
