@@ -7,6 +7,7 @@ import Foundation
 
 actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
     private var activeSessionsByUser: [UUID: LocalStudySession] = [:]
+    private var restoreStatesByUser: [UUID: RestoreState] = [:]
 
     private let userDefaults: UserDefaults
     private let key: String
@@ -32,23 +33,18 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         activeSessionsByUser[userId]
     }
 
-    func restore(userId: UUID) async {
-        let scopedKey = key(for: userId)
+    func restoreState(for userId: UUID) -> RestoreState {
+        restoreStatesByUser[userId] ?? .notStarted
+    }
 
-        guard let data = userDefaults.data(forKey: scopedKey) else {
-            activeSessionsByUser[userId] = nil
-            logger.debug("No active study session found to restore")
-            return
-        }
-
-        let session = await MainActor.run {
-            try? JSONDecoder().decode(LocalStudySession.self, from: data)
-        }
-        activeSessionsByUser[userId] = session
-        logger.info("Restored active study session")
+    func ensureRestored(userId: UUID) async {
+        guard restoreState(for: userId) != .restored else { return }
+        await restore(userId: userId)
     }
 
     func start(categoryId: UUID, userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+        await ensureRestored(userId: userId)
+
         if let activeSession = activeSessionsByUser[userId], activeSession.state != .finished {
             logger.error("Failed to start study session: active session already exists")
             throw StudySessionTrackerLocalError.activeSessionAlreadyExists
@@ -76,6 +72,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
     }
 
     func pause(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+        await ensureRestored(userId: userId)
         var session = try requireActiveSession(userId: userId)
 
         switch session.state {
@@ -111,6 +108,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
     }
 
     func resume(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+        await ensureRestored(userId: userId)
         var session = try requireActiveSession(userId: userId)
 
         switch session.state {
@@ -142,6 +140,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
     }
 
     func finish(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+        await ensureRestored(userId: userId)
         var session = try requireActiveSession(userId: userId)
 
         guard session.state != .finished else {
@@ -230,5 +229,24 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
 
     private func key(for userId: UUID) -> String {
         "\(key).\(userId.uuidString)"
+    }
+    
+    private func restore(userId: UUID) async {
+        restoreStatesByUser[userId] = .restoring
+        let scopedKey = key(for: userId)
+
+        guard let data = userDefaults.data(forKey: scopedKey) else {
+            activeSessionsByUser[userId] = nil
+            restoreStatesByUser[userId] = .restored
+            logger.debug("No active study session found to restore")
+            return
+        }
+
+        let session = await MainActor.run {
+            try? JSONDecoder().decode(LocalStudySession.self, from: data)
+        }
+        activeSessionsByUser[userId] = session
+        restoreStatesByUser[userId] = .restored
+        logger.info("Restored active study session")
     }
 }

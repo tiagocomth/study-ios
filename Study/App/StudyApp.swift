@@ -44,6 +44,5 @@ private struct RootView: View {
                     
             }
         }
-        .task { session.restore() }
     }
 }

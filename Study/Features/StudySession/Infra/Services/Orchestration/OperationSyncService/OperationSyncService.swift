@@ -10,7 +10,6 @@ final class OperationSyncService: OperationSyncServiceProtocol {
     private let offlineOperationSender: OfflineOperationSenderRemoteProtocol
     private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
     private let currentUserId: () -> UUID?
-    private var hasRestored: Bool
     private var isSyncing: Bool
 
     init(
@@ -21,7 +20,6 @@ final class OperationSyncService: OperationSyncServiceProtocol {
         self.offlineOperationSender = offlineOperationSender
         self.offlineOperationQueue = offlineOperationQueue
         self.currentUserId = currentUserId
-        self.hasRestored = false
         self.isSyncing = false
     }
     
@@ -31,7 +29,7 @@ final class OperationSyncService: OperationSyncServiceProtocol {
         isSyncing = true
         defer { isSyncing = false }
 
-        await restore()
+        await offlineOperationQueue.ensureRestored(userId: userId)
 
         guard try await flushPendingOperations(userId: userId) else { return }
         //TODO: notifier worker ser um published, que o view model do study session conhece
@@ -39,12 +37,6 @@ final class OperationSyncService: OperationSyncServiceProtocol {
 }
 
 private extension OperationSyncService {
-    private func restore() async {
-        guard !hasRestored else { return }
-        await offlineOperationQueue.restore()
-        hasRestored = true
-    }
-
     private func flushPendingOperations(userId: UUID) async throws -> Bool {
         for operation in await offlineOperationQueue.allPending(userId: userId) {
             do {

@@ -6,8 +6,9 @@
 import Foundation
 
 nonisolated protocol StudySessionTrackerLocalProtocol {
+    func restoreState(for userId: UUID) async -> RestoreState
+    func ensureRestored(userId: UUID) async
     func getActiveSession(userId: UUID) async -> LocalStudySession?
-    func restore(userId: UUID) async // TODO: Ver quem vai usar esse cara
     func start(categoryId: UUID, userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction
     func pause(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction
     func resume(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction

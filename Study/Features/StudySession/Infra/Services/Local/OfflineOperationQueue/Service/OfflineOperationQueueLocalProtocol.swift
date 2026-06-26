@@ -6,7 +6,8 @@
 import Foundation
 
 nonisolated protocol OfflineOperationQueueLocalProtocol {
-    func restore() async
+    func restoreState(for userId: UUID) async -> RestoreState
+    func ensureRestored(userId: UUID) async
     func enqueue(_ operation: PendingOfflineOperation, userId: UUID) async throws(OfflineOperationQueueLocalError)
     func enqueue(_ operations: [PendingOfflineOperation], userId: UUID) async throws(OfflineOperationQueueLocalError)
     func peek(userId: UUID) async -> PendingOfflineOperation?

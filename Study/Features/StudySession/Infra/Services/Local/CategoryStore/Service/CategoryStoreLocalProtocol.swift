@@ -7,6 +7,8 @@ import Foundation
 
 @MainActor
 protocol CategoryStoreLocalProtocol {
+    func restoreState(for userId: UUID) async -> RestoreState
+    func ensureRestored(userId: UUID) async
     func getAll(userId: UUID) throws(CategoryStoreLocalError) -> [StudyCategory]
     func getById(_ id: UUID, userId: UUID) throws(CategoryStoreLocalError) -> StudyCategory?
     func saveAll(_ categories: [StudyCategory]) throws(CategoryStoreLocalError)

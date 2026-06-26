@@ -10,6 +10,7 @@ import SwiftData
 final class CategoryStoreLocal: CategoryStoreLocalProtocol {
     private let context: ModelContext
     private let logger: DomainLogging
+    private var restoreStatesByUser: [UUID: RestoreState]
 
     init(
         context: ModelContext,
@@ -17,6 +18,16 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
     ) {
         self.context = context
         self.logger = logger
+        self.restoreStatesByUser = [:]
+    }
+
+    func restoreState(for userId: UUID) async -> RestoreState {
+        restoreStatesByUser[userId] ?? .notStarted
+    }
+
+    func ensureRestored(userId: UUID) async {
+        guard await restoreState(for: userId) != .restored else { return }
+        await restore(userId: userId)
     }
 
     func getAll(userId: UUID) throws(CategoryStoreLocalError) -> [StudyCategory] {
@@ -131,5 +142,18 @@ private extension CategoryStoreLocal {
         }
 
         context.insert(StoredStudyCategory(category: category))
+    }
+    
+    func restore(userId: UUID) async {
+        restoreStatesByUser[userId] = .restoring
+
+        do {
+            _ = try fetchAllStoredCategories(userId: userId)
+            restoreStatesByUser[userId] = .restored
+            logger.info("Restored local categories for user \(userId.uuidString)")
+        } catch {
+            restoreStatesByUser[userId] = .failed
+            logger.error("Failed to restore local categories for user \(userId.uuidString)")
+        }
     }
 }

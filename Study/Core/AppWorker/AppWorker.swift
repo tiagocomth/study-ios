@@ -24,6 +24,8 @@ final class AppWorker {
     private let modelContainer: ModelContainer
     private let connectivityMonitorService: ConnectivityMonitorServiceProtocol
     private let appLifecycleService: AppLifecycleServiceProtocol
+    private let categoryLocal: CategoryStoreLocalProtocol
+    private let studySessionTracker: StudySessionTrackerLocalProtocol
     private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
     private let offlineOperationSender: OfflineOperationSenderRemoteProtocol
     private let operationSyncService: OperationSyncServiceProtocol
@@ -31,6 +33,7 @@ final class AppWorker {
 
     init() {
         let session = UserSessionService()
+        session.restore()
         self.userSessionService = session
         self.paymentLogger = PaymentLogger()
         self.paymentService = StoreKitPaymentService(logger: paymentLogger)
@@ -46,6 +49,7 @@ final class AppWorker {
         let categoryRemote = CategoryRemote(apiClient: apiClient)
         let studySessionRemote = StudySessionRemote(apiClient: apiClient)
         let categoryLocal = CategoryStoreLocal(context: modelContainer.mainContext)
+        let studySessionTracker = StudySessionTrackerLocal()
         let offlineOperationQueue = OfflineOperationQueueLocal()
         let offlineOperationSender = OfflineOperationSenderRemote(studySessionRemoteService: studySessionRemote, categoryService: categoryRemote)
         let operationSyncService = OperationSyncService(
@@ -56,6 +60,8 @@ final class AppWorker {
         
         self.connectivityMonitorService = ConnectivityMonitorService()
         self.appLifecycleService = AppLifecycleService()
+        self.categoryLocal = categoryLocal
+        self.studySessionTracker = studySessionTracker
         self.offlineOperationQueue = offlineOperationQueue
         self.offlineOperationSender = offlineOperationSender
         self.operationSyncService = operationSyncService
@@ -79,10 +85,17 @@ final class AppWorker {
     func updateLifecycleState(_ state: AppLifecycleState) {
         appLifecycleService.updateState(state)
     }
+    
+    deinit {
+        //TODO: Fazer os stops tbm
+        for task in self.appTasks {
+            task.cancel()
+        }
+    }
 }
 
 private extension AppWorker {
-    static func makeModelContainer() -> ModelContainer {
+    private static func makeModelContainer() -> ModelContainer {
         do {
             return try ModelContainer(for: StoredStudyCategory.self)
         } catch {
@@ -90,8 +103,8 @@ private extension AppWorker {
         }
     }
 
-    func configurePayments() {
-        Task {
+    private func configurePayments() {
+        let paymentTask = Task {
             await paymentService.startTransactionListener { [paymentLogger] event in
                 paymentLogger.info("App received payment event: \(event.logDescription)")
                 // TODO: implementar o uso do event
@@ -100,10 +113,16 @@ private extension AppWorker {
 
             await paymentService.refreshEntitlements()
         }
+        
+        appTasks.append(paymentTask)
     }
 
-    func configureStudySessionSync() {
+    private func configureStudySessionSync() {
         connectivityMonitorService.start()
+
+        Task { [weak self] in
+            await self?.restoreLocal()
+        }
 
         let connectivityChanges = connectivityMonitorService.connectivityChanges
         let connectivityTask = Task { [weak self] in
@@ -127,11 +146,21 @@ private extension AppWorker {
         appTasks.append(contentsOf: [connectivityTask, appLifeCycleTask])
     }
 
-    func syncStudySession() async {
+    private func syncStudySession() async {
         do {
+            await restoreLocal()
             try await operationSyncService.sync()
         } catch {
             OfflineOperationQueueLogger().error("Failed to sync study session operations: \(error.localizedDescription)")
         }
     }
+
+    private func restoreLocal() async {
+        guard let userId = userSessionService.currentUserId else { return }
+
+        await categoryLocal.ensureRestored(userId: userId)
+        await studySessionTracker.ensureRestored(userId: userId)
+        await offlineOperationQueue.ensureRestored(userId: userId)
+    }
+    
 }

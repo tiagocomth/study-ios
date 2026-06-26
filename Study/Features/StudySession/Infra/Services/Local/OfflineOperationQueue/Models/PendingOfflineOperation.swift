@@ -5,8 +5,6 @@
 
 import Foundation
 
-typealias PendingOperationsByUser = [UUID: [PendingOfflineOperation]]
-
 nonisolated struct PendingOfflineOperation: Codable, Equatable, Sendable {
     let id: UUID
     let createdAt: Date

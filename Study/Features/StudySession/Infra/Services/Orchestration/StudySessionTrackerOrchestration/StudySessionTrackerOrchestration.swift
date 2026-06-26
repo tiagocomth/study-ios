@@ -31,12 +31,13 @@ final class StudySessionTrackerOrchestration: StudySessionTrackerOrchestrationPr
     }
     
     func getActiveSession() async -> LocalStudySession? {
-        guard let userId = await currentUserId() else { return nil }
+        guard let userId = currentUserId() else { return nil }
+        await studySessionTracker.ensureRestored(userId: userId)
         return await studySessionTracker.getActiveSession(userId: userId)
     }
     
     func start(categoryId: UUID) async throws {
-        guard let userId = await currentUserId() else {
+        guard let userId = currentUserId() else {
             throw StudySessionWorkerError.missingCurrentUser
         }
 
@@ -45,7 +46,7 @@ final class StudySessionTrackerOrchestration: StudySessionTrackerOrchestrationPr
     }
     
     func pause() async throws {
-        guard let userId = await currentUserId() else {
+        guard let userId = currentUserId() else {
             throw StudySessionWorkerError.missingCurrentUser
         }
 
@@ -54,7 +55,7 @@ final class StudySessionTrackerOrchestration: StudySessionTrackerOrchestrationPr
     }
     
     func resume() async throws {
-        guard let userId = await currentUserId() else {
+        guard let userId = currentUserId() else {
             throw StudySessionWorkerError.missingCurrentUser
         }
 
@@ -63,7 +64,7 @@ final class StudySessionTrackerOrchestration: StudySessionTrackerOrchestrationPr
     }
     
     func finish() async throws {
-        guard let userId = await currentUserId() else {
+        guard let userId = currentUserId() else {
             throw StudySessionWorkerError.missingCurrentUser
         }
 
@@ -156,6 +157,7 @@ private extension StudySessionTrackerOrchestration {
         userId: UUID
     ) async throws {
         guard OfflineRetryPolicy.shouldEnqueue(error) else { return }
+        await offlineOperationQueue.ensureRestored(userId: userId)
         try await offlineOperationQueue.enqueue(makeOperation(kind), userId: userId)
     }
     
@@ -165,6 +167,7 @@ private extension StudySessionTrackerOrchestration {
         userId: UUID
     ) async throws {
         guard OfflineRetryPolicy.shouldEnqueue(error) else { return }
+        await offlineOperationQueue.ensureRestored(userId: userId)
         try await offlineOperationQueue.enqueue(kinds.map(makeOperation), userId: userId)
     }
     

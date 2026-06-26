@@ -154,6 +154,8 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
 
 private extension CategoryOrchestration {
     private func refreshCategories(userId: UUID) async throws -> [StudyCategory]? {
+        await categoryLocal.ensureRestored(userId: userId)
+        await offlineOperationQueue.ensureRestored(userId: userId)
         guard await offlineOperationQueue.peek(userId: userId) == nil else { return nil }
 
         let backendCategories = try await categoryRemote.getAll()
@@ -228,6 +230,7 @@ private extension CategoryOrchestration {
     }
     
     private func enqueue(_ kind: PendingOfflineOperationKind, userId: UUID) async throws {
+        await offlineOperationQueue.ensureRestored(userId: userId)
         try await offlineOperationQueue.enqueue(makeOperation(kind), userId: userId)
     }
     
