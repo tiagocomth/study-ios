@@ -12,4 +12,5 @@ enum AppKeys: String {
     case userToken = "study_auth_token"
     case activeStudySession = "study_active_session"
     case pendingOfflineOperations = "study_pending_offline_operations"
+    case studySessionTimerMode = "study_session_timer_mode"
 }

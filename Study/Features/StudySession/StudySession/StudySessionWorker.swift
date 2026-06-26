@@ -8,13 +8,22 @@ import Foundation
 final class StudySessionWorker: StudySessionWorkerProtocol {
     private let categoryOrchestration: CategoryOrchestrationProtocol
     private let studySessionTrackerOrchestration: StudySessionTrackerOrchestrationProtocol
+    private let timerModeStore: StudySessionTimerModeStoreLocalProtocol
+    private let timerService: StudySessionTimerServiceProtocol
+    private let currentUserId: () -> UUID?
     
     init(
         categoryOrchestration: CategoryOrchestrationProtocol,
-        studySessionTrackerOrchestration: StudySessionTrackerOrchestrationProtocol
+        studySessionTrackerOrchestration: StudySessionTrackerOrchestrationProtocol,
+        timerModeStore: StudySessionTimerModeStoreLocalProtocol,
+        timerService: StudySessionTimerServiceProtocol,
+        currentUserId: @escaping () -> UUID?
     ) {
         self.categoryOrchestration = categoryOrchestration
         self.studySessionTrackerOrchestration = studySessionTrackerOrchestration
+        self.timerModeStore = timerModeStore
+        self.timerService = timerService
+        self.currentUserId = currentUserId
     }
 
     func categoryChanges() -> AsyncStream<[StudyCategory]> {
@@ -23,6 +32,27 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
 
     func activeStudySessionChanges() async -> AsyncStream<LocalStudySession?> {
         await studySessionTrackerOrchestration.activeSessionChanges()
+    }
+
+    func configureTimer(_ mode: StudySessionTimerMode) async throws {
+        guard let userId = currentUserId() else {
+            throw StudySessionWorkerError.missingCurrentUser
+        }
+
+        await timerModeStore.saveMode(mode, userId: userId)
+    }
+
+    func timerChanges() async throws -> AsyncStream<StudySessionTimerState> {
+        guard let userId = currentUserId() else {
+            throw StudySessionWorkerError.missingCurrentUser
+        }
+
+        guard let mode = await timerModeStore.getMode(userId: userId) else {
+            throw StudySessionWorkerError.studySessionTimerNotConfigured
+        }
+
+        let sessionChanges = await studySessionTrackerOrchestration.activeSessionChanges()
+        return timerService.timerStates(mode: mode, sessionChanges: sessionChanges)
     }
 
     func loadCategories(onBackendRefresh: @escaping CategoriesRefreshCallback) throws -> [StudyCategory] {

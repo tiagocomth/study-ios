@@ -12,6 +12,8 @@ typealias ShouldRollback = @MainActor @Sendable (Error) -> Void
 protocol StudySessionWorkerProtocol {
     func categoryChanges() -> AsyncStream<[StudyCategory]>
     func activeStudySessionChanges() async -> AsyncStream<LocalStudySession?>
+    func configureTimer(_ mode: StudySessionTimerMode) async throws
+    func timerChanges() async throws -> AsyncStream<StudySessionTimerState>
     
     func createCategory(
         _ dto: CreateCategoryDTO,
