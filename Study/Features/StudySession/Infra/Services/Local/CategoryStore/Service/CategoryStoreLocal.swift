@@ -19,18 +19,18 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
         self.logger = logger
     }
 
-    func getAll() throws(CategoryStoreLocalError) -> [StudyCategory] {
+    func getAll(userId: UUID) throws(CategoryStoreLocalError) -> [StudyCategory] {
         do {
-            return try fetchAllStoredCategories().map { $0.toStudyCategory() }
+            return try fetchAllStoredCategories(userId: userId).map { $0.toStudyCategory() }
         } catch {
             logger.error("Failed to fetch local categories")
             throw CategoryStoreLocalError.failedToFetchCategories
         }
     }
 
-    func getById(_ id: UUID) throws(CategoryStoreLocalError) -> StudyCategory? {
+    func getById(_ id: UUID, userId: UUID) throws(CategoryStoreLocalError) -> StudyCategory? {
         do {
-            return try fetchStoredCategory(id: id)?.toStudyCategory()
+            return try fetchStoredCategory(id: id, userId: userId)?.toStudyCategory()
         } catch {
             logger.error("Failed to fetch local category \(id.uuidString)")
             throw CategoryStoreLocalError.failedToFetchCategories
@@ -59,9 +59,9 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
         }
     }
 
-    func delete(id: UUID) throws(CategoryStoreLocalError) {
+    func delete(id: UUID, userId: UUID) throws(CategoryStoreLocalError) {
         do {
-            if let category = try fetchStoredCategory(id: id) {
+            if let category = try fetchStoredCategory(id: id, userId: userId) {
                 context.delete(category)
                 try context.save()
             }
@@ -72,9 +72,9 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
         }
     }
 
-    func rollbackCreate(id: UUID) throws(CategoryStoreLocalError) {
+    func rollbackCreate(id: UUID, userId: UUID) throws(CategoryStoreLocalError) {
         do {
-            if let category = try fetchStoredCategory(id: id) {
+            if let category = try fetchStoredCategory(id: id, userId: userId) {
                 context.delete(category)
                 try context.save()
             }
@@ -109,22 +109,23 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
 }
 
 private extension CategoryStoreLocal {
-    func fetchAllStoredCategories() throws -> [StoredStudyCategory] {
+    func fetchAllStoredCategories(userId: UUID) throws -> [StoredStudyCategory] {
         let descriptor = FetchDescriptor<StoredStudyCategory>(
+            predicate: #Predicate { $0.userId == userId },
             sortBy: [SortDescriptor(\.createdAt)]
         )
         return try context.fetch(descriptor)
     }
 
-    func fetchStoredCategory(id: UUID) throws -> StoredStudyCategory? {
+    func fetchStoredCategory(id: UUID, userId: UUID) throws -> StoredStudyCategory? {
         let descriptor = FetchDescriptor<StoredStudyCategory>(
-            predicate: #Predicate { $0.categoryId == id }
+            predicate: #Predicate { $0.categoryId == id && $0.userId == userId }
         )
         return try context.fetch(descriptor).first
     }
 
     func saveCategory(_ category: StudyCategory) throws {
-        if let storedCategory = try fetchStoredCategory(id: category.categoryId) {
+        if let storedCategory = try fetchStoredCategory(id: category.categoryId, userId: category.userId) {
             storedCategory.update(with: category)
             return
         }

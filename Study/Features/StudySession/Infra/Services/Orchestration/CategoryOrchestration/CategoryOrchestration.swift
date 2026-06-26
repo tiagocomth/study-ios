@@ -10,7 +10,7 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
     private let categoryRemote: CategoryRemoteProtocol
     private let categoryLocal: CategoryStoreLocalProtocol
     private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
-    private let currentUserId: @Sendable () -> UUID?
+    private let currentUserId: () -> UUID?
     private let makeId: @Sendable () -> UUID
     private let now: @Sendable () -> Date
     private var tasks: [Task<Void, Never>] = []
@@ -19,7 +19,7 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
         categoryRemote: CategoryRemoteProtocol,
         categoryLocal: CategoryStoreLocalProtocol,
         offlineOperationQueue: OfflineOperationQueueLocalProtocol,
-        currentUserId: @escaping @Sendable () -> UUID?,
+        currentUserId: @escaping () -> UUID?,
         makeId: @escaping @Sendable () -> UUID = { UUID() },
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
@@ -32,13 +32,17 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
     }
     
     func loadCategories(onBackendRefresh: @escaping CategoriesRefreshCallback) throws -> [StudyCategory] {
-        let localCategories = try categoryLocal.getAll()
+        guard let userId = currentUserId() else {
+            throw CategoryOrchestrationError.missingCurrentUser
+        }
+
+        let localCategories = try categoryLocal.getAll(userId: userId)
         
         let task = Task { @MainActor [weak self] in
             
             guard let self else { return }
-            
-            guard let backendCategories = try? await refreshCategories() else { return }
+
+            guard let backendCategories = try? await refreshCategories(userId: userId) else { return }
             onBackendRefresh(backendCategories)
         }
         
@@ -66,6 +70,7 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
         let task = Task { @MainActor [weak self] in
             guard let self else { return }
             await sendCreateCategory(
+                userId: userId,
                 id: localCategory.categoryId,
                 dto,
                 onShouldRollback: onShouldRollback
@@ -81,7 +86,11 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
         dto: UpdateCategoryDTO,
         onShouldRollback: @escaping ShouldRollback
     ) throws -> StudyCategory {
-        guard let previousCategory = try categoryLocal.getById(id) else {
+        guard let userId = currentUserId() else {
+            throw CategoryOrchestrationError.missingCurrentUser
+        }
+
+        guard let previousCategory = try categoryLocal.getById(id, userId: userId) else {
             throw CategoryOrchestrationError.categoryNotFound
         }
         
@@ -97,6 +106,7 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
         let task = Task { @MainActor [weak self] in
             guard let self else { return }
             await sendUpdateCategory(
+                userId: userId,
                 id: id,
                 dto: dto,
                 previousCategory: previousCategory,
@@ -112,15 +122,20 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
         id: UUID,
         onShouldRollback: @escaping ShouldRollback
     ) throws {
-        guard let deletedCategory = try categoryLocal.getById(id) else {
+        guard let userId = currentUserId() else {
+            throw CategoryOrchestrationError.missingCurrentUser
+        }
+
+        guard let deletedCategory = try categoryLocal.getById(id, userId: userId) else {
             throw CategoryOrchestrationError.categoryNotFound
         }
         
-        try categoryLocal.delete(id: id)
+        try categoryLocal.delete(id: id, userId: userId)
         
         let task = Task { @MainActor [weak self] in
             guard let self else { return }
             await sendDeleteCategory(
+                userId: userId,
                 id: id,
                 deletedCategory: deletedCategory,
                 onShouldRollback: onShouldRollback
@@ -138,17 +153,18 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
 }
 
 private extension CategoryOrchestration {
-    private func refreshCategories() async throws -> [StudyCategory]? {
-        guard await offlineOperationQueue.peek() == nil else { return nil }
+    private func refreshCategories(userId: UUID) async throws -> [StudyCategory]? {
+        guard await offlineOperationQueue.peek(userId: userId) == nil else { return nil }
 
         let backendCategories = try await categoryRemote.getAll()
-        guard await offlineOperationQueue.peek() == nil else { return nil }
+        guard await offlineOperationQueue.peek(userId: userId) == nil else { return nil }
 
         try categoryLocal.saveAll(backendCategories)
         return backendCategories
     }
     
     private func sendCreateCategory(
+        userId: UUID,
         id: UUID,
         _ dto: CreateCategoryDTO,
         onShouldRollback: @escaping ShouldRollback
@@ -158,17 +174,18 @@ private extension CategoryOrchestration {
         } catch {
             do {
                 if OfflineRetryPolicy.shouldEnqueue(error) {
-                    try await enqueue(.createCategory(dto))
+                    try await enqueue(.createCategory(dto), userId: userId)
                     return
                 }
                 
-                try categoryLocal.rollbackCreate(id: id)
+                try categoryLocal.rollbackCreate(id: id, userId: userId)
                 onShouldRollback(error)
             } catch {}
         }
     }
     
     private func sendUpdateCategory(
+        userId: UUID,
         id: UUID,
         dto: UpdateCategoryDTO,
         previousCategory: StudyCategory,
@@ -179,7 +196,7 @@ private extension CategoryOrchestration {
         } catch {
             do {
                 if OfflineRetryPolicy.shouldEnqueue(error) {
-                    try await enqueue(.updateCategory(id: id, dto: dto))
+                    try await enqueue(.updateCategory(id: id, dto: dto), userId: userId)
                     return
                 }
                 
@@ -190,6 +207,7 @@ private extension CategoryOrchestration {
     }
     
     private func sendDeleteCategory(
+        userId: UUID,
         id: UUID,
         deletedCategory: StudyCategory,
         onShouldRollback: @escaping ShouldRollback
@@ -199,7 +217,7 @@ private extension CategoryOrchestration {
         } catch {
             do {
                 if OfflineRetryPolicy.shouldEnqueue(error) {
-                    try await enqueue(.deleteCategory(id))
+                    try await enqueue(.deleteCategory(id), userId: userId)
                     return
                 }
                 
@@ -209,8 +227,8 @@ private extension CategoryOrchestration {
         }
     }
     
-    private func enqueue(_ kind: PendingOfflineOperationKind) async throws {
-        try await offlineOperationQueue.enqueue(makeOperation(kind))
+    private func enqueue(_ kind: PendingOfflineOperationKind, userId: UUID) async throws {
+        try await offlineOperationQueue.enqueue(makeOperation(kind), userId: userId)
     }
     
     private func makeOperation(_ kind: PendingOfflineOperationKind) -> PendingOfflineOperation {

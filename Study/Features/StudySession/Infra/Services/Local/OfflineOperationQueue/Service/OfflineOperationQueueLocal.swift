@@ -6,7 +6,7 @@
 import Foundation
 
 actor OfflineOperationQueueLocal: OfflineOperationQueueLocalProtocol {
-    private var pendingOperations: [PendingOfflineOperation] = []
+    private var pendingOperationsByUser: PendingOperationsByUser = [:]
 
     private let userDefaults: UserDefaults
     private let key: String
@@ -27,70 +27,76 @@ actor OfflineOperationQueueLocal: OfflineOperationQueueLocalProtocol {
 
     func restore() async {
         guard let data = userDefaults.data(forKey: key) else {
-            pendingOperations = []
+            pendingOperationsByUser = [:]
             logger.debug("No pending offline operations found to restore")
             return
         }
 
-        pendingOperations = await MainActor.run {
-            (try? JSONDecoder().decode([PendingOfflineOperation].self, from: data)) ?? []
-        }
-        logger.info("Restored \(pendingOperations.count) pending offline operations")
+        pendingOperationsByUser = (try? JSONDecoder().decode(PendingOperationsByUser.self, from: data)) ?? [:]
+        
+        let pendingCount = pendingOperationsByUser.values.reduce(0) { $0 + $1.count }
+        logger.info("Restored \(pendingCount) pending offline operations")
     }
 
-    func enqueue(_ operation: PendingOfflineOperation) async throws(OfflineOperationQueueLocalError) {
-        var updatedOperations = pendingOperations
+    func enqueue(_ operation: PendingOfflineOperation, userId: UUID) throws(OfflineOperationQueueLocalError) {
+        var updatedOperations = pendingOperationsByUser[userId] ?? []
         updatedOperations.append(operation)
 
-        try await persist(updatedOperations)
-        pendingOperations = updatedOperations
+        pendingOperationsByUser[userId] = updatedOperations
+        try persist()
         logger.info("Enqueued offline operation \(operation.id.uuidString)")
     }
 
-    func enqueue(_ operations: [PendingOfflineOperation]) async throws(OfflineOperationQueueLocalError) {
+    func enqueue(_ operations: [PendingOfflineOperation], userId: UUID) throws(OfflineOperationQueueLocalError) {
         guard !operations.isEmpty else { return }
 
-        var updatedOperations = pendingOperations
+        var updatedOperations = pendingOperationsByUser[userId] ?? []
         updatedOperations.append(contentsOf: operations)
 
-        try await persist(updatedOperations)
-        pendingOperations = updatedOperations
+        pendingOperationsByUser[userId] = updatedOperations
+        try persist()
         logger.info("Enqueued \(operations.count) offline operations")
     }
 
-    func peek() -> PendingOfflineOperation? {
-        pendingOperations.first
+    func peek(userId: UUID) -> PendingOfflineOperation? {
+        pendingOperationsByUser[userId]?.first
     }
 
-    func allPending() -> [PendingOfflineOperation] {
-        pendingOperations
+    func allPending(userId: UUID) -> [PendingOfflineOperation] {
+        pendingOperationsByUser[userId] ?? []
     }
 
-    func markFirstSucceeded(_ id: UUID) async throws(OfflineOperationQueueLocalError) {
-        try validateFirstOperation(id)
+    func markFirstSucceeded(_ id: UUID, userId: UUID) throws(OfflineOperationQueueLocalError) {
+        try validateFirstOperation(id, userId: userId)
 
-        var updatedOperations = pendingOperations
+        var updatedOperations = pendingOperationsByUser[userId] ?? []
         updatedOperations.removeFirst()
 
-        try await persist(updatedOperations)
-        pendingOperations = updatedOperations
+        pendingOperationsByUser[userId] = updatedOperations
+        try persist()
         logger.info("Marked first offline operation \(id.uuidString) as succeeded")
     }
 
-    func markFirstFailed(_ id: UUID) async throws(OfflineOperationQueueLocalError) {
-        try validateFirstOperation(id)
+    func markFirstFailed(_ id: UUID, userId: UUID) throws(OfflineOperationQueueLocalError) {
+        try validateFirstOperation(id, userId: userId)
 
-        var updatedOperations = pendingOperations
+        var updatedOperations = pendingOperationsByUser[userId] ?? []
         updatedOperations[0].attemptCount += 1
         updatedOperations[0].lastAttemptAt = now()
 
-        try await persist(updatedOperations)
-        pendingOperations = updatedOperations
+        pendingOperationsByUser[userId] = updatedOperations
+        try persist()
         logger.info("Marked first offline operation \(id.uuidString) as failed")
     }
 
-    private func validateFirstOperation(_ id: UUID) throws(OfflineOperationQueueLocalError) {
-        guard let firstOperation = pendingOperations.first else {
+    func clear(userId: UUID) throws(OfflineOperationQueueLocalError) {
+        pendingOperationsByUser[userId] = []
+        try persist()
+        logger.info("Cleared offline operation queue for user \(userId.uuidString)")
+    }
+
+    private func validateFirstOperation(_ id: UUID, userId: UUID) throws(OfflineOperationQueueLocalError) {
+        guard let firstOperation = pendingOperationsByUser[userId]?.first else {
             logger.error("Failed to update offline operation \(id.uuidString): queue is empty")
             throw OfflineOperationQueueLocalError.queueIsEmpty
         }
@@ -101,11 +107,10 @@ actor OfflineOperationQueueLocal: OfflineOperationQueueLocalProtocol {
         }
     }
 
-    private func persist(_ operations: [PendingOfflineOperation]) async throws(OfflineOperationQueueLocalError) {
+    private func persist() throws(OfflineOperationQueueLocalError) {
         do {
-            let data = try await MainActor.run {
-                try JSONEncoder().encode(operations)
-            }
+            let data = try JSONEncoder().encode(pendingOperationsByUser)
+            
             userDefaults.set(data, forKey: key)
         } catch {
             logger.error("Failed to persist offline operations: \(error.localizedDescription)")

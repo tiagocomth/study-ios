@@ -41,6 +41,7 @@ final class AppWorker {
         self.apiClient = APIClient(
             tokenProvider: TokenProvider { session.token }
         )
+        let currentUserId = { session.currentUserId }
 
         let categoryRemote = CategoryRemote(apiClient: apiClient)
         let studySessionRemote = StudySessionRemote(apiClient: apiClient)
@@ -50,8 +51,7 @@ final class AppWorker {
         let operationSyncService = OperationSyncService(
             offlineOperationSender: offlineOperationSender,
             offlineOperationQueue: offlineOperationQueue,
-            categoryRemote: categoryRemote,
-            categoryLocal: categoryLocal
+            currentUserId: currentUserId
         )
         
         self.connectivityMonitorService = ConnectivityMonitorService()

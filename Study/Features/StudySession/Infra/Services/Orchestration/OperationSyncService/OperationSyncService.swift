@@ -9,52 +9,50 @@ import Foundation
 final class OperationSyncService: OperationSyncServiceProtocol {
     private let offlineOperationSender: OfflineOperationSenderRemoteProtocol
     private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
-    private let categoryRemote: CategoryRemoteProtocol
-    private let categoryLocal: CategoryStoreLocalProtocol
+    private let currentUserId: () -> UUID?
     private var hasRestored: Bool
     private var isSyncing: Bool
 
     init(
         offlineOperationSender: OfflineOperationSenderRemoteProtocol,
         offlineOperationQueue: OfflineOperationQueueLocalProtocol,
-        categoryRemote: CategoryRemoteProtocol,
-        categoryLocal: CategoryStoreLocalProtocol
+        currentUserId: @escaping () -> UUID?
     ) {
         self.offlineOperationSender = offlineOperationSender
         self.offlineOperationQueue = offlineOperationQueue
-        self.categoryRemote = categoryRemote
-        self.categoryLocal = categoryLocal
+        self.currentUserId = currentUserId
         self.hasRestored = false
         self.isSyncing = false
     }
     
     func sync() async throws {
+        guard let userId = currentUserId() else { return }
         guard !isSyncing else { return }
         isSyncing = true
         defer { isSyncing = false }
 
         await restore()
 
-        guard try await flushPendingOperations() else { return }
+        guard try await flushPendingOperations(userId: userId) else { return }
         //TODO: notifier worker ser um published, que o view model do study session conhece
     }
 }
 
 private extension OperationSyncService {
-    func restore() async {
+    private func restore() async {
         guard !hasRestored else { return }
         await offlineOperationQueue.restore()
         hasRestored = true
     }
 
-    func flushPendingOperations() async throws -> Bool {
-        for operation in await offlineOperationQueue.allPending() {
+    private func flushPendingOperations(userId: UUID) async throws -> Bool {
+        for operation in await offlineOperationQueue.allPending(userId: userId) {
             do {
                 try await offlineOperationSender.send(operation)
-                try await offlineOperationQueue.markFirstSucceeded(operation.id)
+                try await offlineOperationQueue.markFirstSucceeded(operation.id, userId: userId)
                 
             } catch is NetworkError {
-                try? await offlineOperationQueue.markFirstFailed(operation.id)
+                try? await offlineOperationQueue.markFirstFailed(operation.id, userId: userId)
                 return false
                 
             } catch let error as OfflineOperationQueueLocalError {

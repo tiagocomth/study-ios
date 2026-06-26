@@ -6,7 +6,7 @@
 import Foundation
 
 actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
-    private(set) var activeSession: LocalStudySession?
+    private var activeSessionsByUser: [UUID: LocalStudySession] = [:]
 
     private let userDefaults: UserDefaults
     private let key: String
@@ -28,25 +28,28 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         self.logger = logger
     }
 
-    func getActiveSession() -> LocalStudySession? {
-        activeSession
+    func getActiveSession(userId: UUID) -> LocalStudySession? {
+        activeSessionsByUser[userId]
     }
 
-    func restore() async {
-        guard let data = userDefaults.data(forKey: key) else {
-            activeSession = nil
+    func restore(userId: UUID) async {
+        let scopedKey = key(for: userId)
+
+        guard let data = userDefaults.data(forKey: scopedKey) else {
+            activeSessionsByUser[userId] = nil
             logger.debug("No active study session found to restore")
             return
         }
 
-        activeSession = await MainActor.run {
+        let session = await MainActor.run {
             try? JSONDecoder().decode(LocalStudySession.self, from: data)
         }
+        activeSessionsByUser[userId] = session
         logger.info("Restored active study session")
     }
 
-    func start(categoryId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
-        if let activeSession, activeSession.state != .finished {
+    func start(categoryId: UUID, userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+        if let activeSession = activeSessionsByUser[userId], activeSession.state != .finished {
             logger.error("Failed to start study session: active session already exists")
             throw StudySessionTrackerLocalError.activeSessionAlreadyExists
         }
@@ -60,7 +63,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
             pauses: []
         )
 
-        try await persist(session)
+        try await persist(session, userId: userId)
         logger.info("Started study session \(session.sessionId.uuidString)")
 
         return .started(
@@ -72,8 +75,8 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         )
     }
 
-    func pause() async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
-        var session = try requireActiveSession()
+    func pause(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+        var session = try requireActiveSession(userId: userId)
 
         switch session.state {
         case .running:
@@ -95,7 +98,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         session.pauses.append(pause)
         session.state = .paused
 
-        try await persist(session)
+        try await persist(session, userId: userId)
         logger.info("Paused study session \(session.sessionId.uuidString) with pause \(pause.pauseId.uuidString)")
 
         return .paused(
@@ -107,8 +110,8 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         )
     }
 
-    func resume() async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
-        var session = try requireActiveSession()
+    func resume(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+        var session = try requireActiveSession(userId: userId)
 
         switch session.state {
         case .running:
@@ -127,7 +130,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         session.pauses[pauseIndex].endedAt = endedAt
         session.state = .running
 
-        try await persist(session)
+        try await persist(session, userId: userId)
         logger.info("Resumed study session \(session.sessionId.uuidString)")
 
         return .resumed(
@@ -138,8 +141,8 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         )
     }
 
-    func finish() async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
-        var session = try requireActiveSession()
+    func finish(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+        var session = try requireActiveSession(userId: userId)
 
         guard session.state != .finished else {
             logger.error("Failed to finish study session: session is already finished")
@@ -162,7 +165,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         session.endDate = endDate
         session.state = .finished
 
-        try await persist(session)
+        try await persist(session, userId: userId)
         logger.info("Finished study session \(session.sessionId.uuidString)")
 
         let endDTO = EndStudySessionDTO(
@@ -176,14 +179,14 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         return .finished(sessionId: session.sessionId, dto: endDTO)
     }
 
-    func clear() {
-        userDefaults.removeObject(forKey: key)
-        activeSession = nil
+    func clear(userId: UUID) {
+        userDefaults.removeObject(forKey: key(for: userId))
+        activeSessionsByUser[userId] = nil
         logger.info("Cleared active study session")
     }
 
-    private func requireActiveSession() throws(StudySessionTrackerLocalError) -> LocalStudySession {
-        guard let activeSession else {
+    private func requireActiveSession(userId: UUID) throws(StudySessionTrackerLocalError) -> LocalStudySession {
+        guard let activeSession = activeSessionsByUser[userId] else {
             logger.error("Failed to read active study session: session not found")
             throw StudySessionTrackerLocalError.sessionNotFound
         }
@@ -212,16 +215,20 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         return openIndex
     }
 
-    private func persist(_ session: LocalStudySession) async throws(StudySessionTrackerLocalError) {
+    private func persist(_ session: LocalStudySession, userId: UUID) async throws(StudySessionTrackerLocalError) {
         do {
             let data = try await MainActor.run {
                 try JSONEncoder().encode(session)
             }
-            userDefaults.set(data, forKey: key)
-            activeSession = session
+            userDefaults.set(data, forKey: key(for: userId))
+            activeSessionsByUser[userId] = session
         } catch {
             logger.error("Failed to persist study session \(session.sessionId.uuidString): \(error.localizedDescription)")
             throw StudySessionTrackerLocalError.failedToPersistSession
         }
+    }
+
+    private func key(for userId: UUID) -> String {
+        "\(key).\(userId.uuidString)"
     }
 }
