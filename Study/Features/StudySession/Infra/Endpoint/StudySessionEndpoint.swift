@@ -11,6 +11,7 @@ enum StudySessionEndpoint: Endpoint {
     case pauseStudySession(id: UUID, dto: PauseStudySessionDTO)
     case resumeStudySession(id: UUID, dto: ResumeStudySessionDTO)
     case endStudySession(id: UUID, dto: EndStudySessionDTO)
+    case deleteStudySession(UUID)
 
     case getCategories
     case getCategoryById(UUID)
@@ -30,6 +31,8 @@ enum StudySessionEndpoint: Endpoint {
             "/sessions/\(id.uuidString)/resume"
         case .endStudySession(let id, _):
             "/sessions/\(id.uuidString)/end"
+        case .deleteStudySession(let id):
+            "/sessions/\(id.uuidString)"
         case .getCategories, .createCategory:
             "/categories"
         case .getCategoryById(let id), .deleteCategory(let id):
@@ -47,14 +50,14 @@ enum StudySessionEndpoint: Endpoint {
             .post
         case .resumeStudySession, .endStudySession, .updateCategory:
             .patch
-        case .deleteCategory:
+        case .deleteStudySession, .deleteCategory:
             .delete
         }
     }
 
     var task: HTTPTask {
         switch self {
-        case .getStudySessions, .getCategories, .getCategoryById, .deleteCategory:
+        case .getStudySessions, .getCategories, .getCategoryById, .deleteStudySession, .deleteCategory:
             .requestPlain
         case .startStudySession(let dto):
             .requestJSONBody(dto)

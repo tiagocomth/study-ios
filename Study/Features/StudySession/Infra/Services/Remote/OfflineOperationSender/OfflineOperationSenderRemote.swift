@@ -36,6 +36,9 @@ final class OfflineOperationSenderRemote: OfflineOperationSenderRemoteProtocol {
         case .endStudySession(let id, let dto):
             try await studySessionRemoteService.finish(id: id, dto: dto)
 
+        case .deleteStudySession(let id):
+            try await studySessionRemoteService.delete(id: id)
+
         case .createCategory(let dto):
             try await categoryService.create(dto)
 

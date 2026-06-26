@@ -36,4 +36,9 @@ final class StudySessionRemote: StudySessionRemoteProtocol {
         logger.info("Sending study session finish \(id.uuidString)")
         let _: EmptyResponse = try await apiClient.request(StudySessionEndpoint.endStudySession(id: id, dto: dto))
     }
+
+    func delete(id: UUID) async throws(NetworkError) {
+        logger.info("Sending study session delete \(id.uuidString)")
+        let _: EmptyResponse = try await apiClient.request(StudySessionEndpoint.deleteStudySession(id))
+    }
 }

@@ -30,6 +30,8 @@ final class AppWorker {
     private let offlineOperationSender: OfflineOperationSenderRemoteProtocol
     private let operationSyncService: OperationSyncServiceProtocol
     private let categorySyncService: CategorySyncServiceProtocol
+    private let now: @Sendable () -> Date
+    private let makeId: @Sendable () -> UUID
     private var appTasks: [Task<Void, Never>]
 
     init() {
@@ -72,6 +74,8 @@ final class AppWorker {
         self.offlineOperationSender = offlineOperationSender
         self.operationSyncService = operationSyncService
         self.categorySyncService = categorySyncService
+        self.now = { Date() }
+        self.makeId = { UUID() }
         self.appTasks = []
 
         // Auto-logout whenever a request comes back 401. `logout()` is
@@ -129,12 +133,14 @@ private extension AppWorker {
 
         Task { [weak self] in
             await self?.restoreLocal()
+            await self?.expireSessionIfNeeded()
         }
 
         let connectivityChanges = connectivityMonitorService.connectivityChanges
         let connectivityTask = Task { [weak self] in
             for await isConnected in connectivityChanges {
                 guard isConnected else { continue }
+                await self?.expireSessionIfNeeded()
                 await self?.syncStudySession()
             }
         }
@@ -146,6 +152,7 @@ private extension AppWorker {
             for await state in stateChanges {
                 guard state == .active else { continue }
                 await paymentService.refreshEntitlements()
+                await self?.expireSessionIfNeeded()
                 await self?.syncStudySession()
             }
         }
@@ -181,6 +188,33 @@ private extension AppWorker {
         await categoryLocal.ensureRestored(userId: userId)
         await studySessionTracker.ensureRestored(userId: userId)
         await offlineOperationQueue.ensureRestored(userId: userId)
+    }
+
+    private func expireSessionIfNeeded() async {
+        guard let userId = userSessionService.currentUserId else { return }
+
+        await studySessionTracker.ensureRestored(userId: userId)
+        await offlineOperationQueue.ensureRestored(userId: userId)
+
+        guard let session = await studySessionTracker.getActiveSession(userId: userId) else { return }
+        guard StudySessionExpirationPolicy.shouldExpire(session, now: now()) else { return }
+
+        await studySessionTracker.clear(userId: userId)
+
+        let operation = PendingOfflineOperation(
+            id: makeId(),
+            createdAt: now(),
+            lastAttemptAt: nil,
+            attemptCount: 0,
+            kind: .deleteStudySession(session.sessionId)
+        )
+
+        do {
+            try await offlineOperationQueue.enqueue(operation, userId: userId)
+            OfflineOperationQueueLogger().info("Expired study session \(session.sessionId.uuidString) and enqueued delete operation")
+        } catch {
+            OfflineOperationQueueLogger().error("Failed to enqueue delete operation for expired study session \(session.sessionId.uuidString): \(error.localizedDescription)")
+        }
     }
     
 }
