@@ -28,6 +28,17 @@ final class StudySessionTrackerOrchestration: StudySessionTrackerOrchestrationPr
         self.makeId = makeId
         self.now = now
     }
+
+    func activeSessionChanges() async -> AsyncStream<LocalStudySession?> {
+        guard let userId = await currentUserId() else {
+            return AsyncStream { continuation in
+                continuation.yield(nil)
+                continuation.finish()
+            }
+        }
+
+        return await studySessionTracker.sessionChanges(userId: userId)
+    }
     
     func getActiveSession() async -> LocalStudySession? {
         guard let userId = await currentUserId() else { return nil }

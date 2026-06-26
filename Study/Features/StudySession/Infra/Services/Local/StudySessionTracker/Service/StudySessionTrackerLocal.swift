@@ -8,6 +8,7 @@ import Foundation
 actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
     private var activeSessionsByUser: [UUID: LocalStudySession] = [:]
     private var restoreStatesByUser: [UUID: RestoreState] = [:]
+    private var sessionChangeContinuationsByUser: [UUID: [UUID: AsyncStream<LocalStudySession?>.Continuation]] = [:]
 
     private let userDefaults: UserDefaults
     private let key: String
@@ -27,6 +28,25 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         self.now = now
         self.makeId = makeId
         self.logger = logger
+    }
+
+    func sessionChanges(userId: UUID) -> AsyncStream<LocalStudySession?> {
+        let streamId = UUID()
+
+        return AsyncStream { continuation in
+            sessionChangeContinuationsByUser[userId, default: [:]][streamId] = continuation
+
+            continuation.onTermination = { @Sendable [weak self] _ in
+                Task {
+                    await self?.removeSessionContinuation(streamId: streamId, userId: userId)
+                }
+            }
+
+            Task {
+                await self.ensureRestored(userId: userId)
+                self.emitSessionChanges(for: userId)
+            }
+        }
     }
 
     func getActiveSession(userId: UUID) -> LocalStudySession? {
@@ -60,6 +80,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         )
 
         try await persist(session, userId: userId)
+        emitSessionChanges(for: userId)
         logger.info("Started study session \(session.sessionId.uuidString)")
 
         return .started(
@@ -96,6 +117,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         session.state = .paused
 
         try await persist(session, userId: userId)
+        emitSessionChanges(for: userId)
         logger.info("Paused study session \(session.sessionId.uuidString) with pause \(pause.pauseId.uuidString)")
 
         return .paused(
@@ -129,6 +151,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         session.state = .running
 
         try await persist(session, userId: userId)
+        emitSessionChanges(for: userId)
         logger.info("Resumed study session \(session.sessionId.uuidString)")
 
         return .resumed(
@@ -165,6 +188,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         session.state = .finished
 
         try await persist(session, userId: userId)
+        emitSessionChanges(for: userId)
         logger.info("Finished study session \(session.sessionId.uuidString)")
 
         let endDTO = EndStudySessionDTO(
@@ -181,6 +205,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
     func clear(userId: UUID) {
         userDefaults.removeObject(forKey: key(for: userId))
         activeSessionsByUser[userId] = nil
+        emitSessionChanges(for: userId)
         logger.info("Cleared active study session")
     }
 
@@ -238,6 +263,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         guard let data = userDefaults.data(forKey: scopedKey) else {
             activeSessionsByUser[userId] = nil
             restoreStatesByUser[userId] = .restored
+            emitSessionChanges(for: userId)
             logger.debug("No active study session found to restore")
             return
         }
@@ -247,6 +273,19 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         }
         activeSessionsByUser[userId] = session
         restoreStatesByUser[userId] = .restored
+        emitSessionChanges(for: userId)
         logger.info("Restored active study session")
+    }
+
+    private func emitSessionChanges(for userId: UUID) {
+        let session = activeSessionsByUser[userId]
+        sessionChangeContinuationsByUser[userId]?.values.forEach { $0.yield(session) }
+    }
+
+    private func removeSessionContinuation(streamId: UUID, userId: UUID) {
+        sessionChangeContinuationsByUser[userId]?[streamId] = nil
+        if sessionChangeContinuationsByUser[userId]?.isEmpty == true {
+            sessionChangeContinuationsByUser[userId] = nil
+        }
     }
 }

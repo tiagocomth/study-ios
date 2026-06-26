@@ -17,6 +17,14 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
         self.studySessionTrackerOrchestration = studySessionTrackerOrchestration
     }
 
+    func categoryChanges() -> AsyncStream<[StudyCategory]> {
+        categoryOrchestration.categoryChanges()
+    }
+
+    func activeStudySessionChanges() async -> AsyncStream<LocalStudySession?> {
+        await studySessionTrackerOrchestration.activeSessionChanges()
+    }
+
     func loadCategories(onBackendRefresh: @escaping CategoriesRefreshCallback) throws -> [StudyCategory] {
         try categoryOrchestration.loadCategories(onBackendRefresh: onBackendRefresh)
     }

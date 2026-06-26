@@ -11,6 +11,7 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
     private let context: ModelContext
     private let logger: DomainLogging
     private var restoreStatesByUser: [UUID: RestoreState]
+    private var categoryChangeContinuationsByUser: [UUID: [UUID: AsyncStream<[StudyCategory]>.Continuation]]
 
     init(
         context: ModelContext,
@@ -19,6 +20,32 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
         self.context = context
         self.logger = logger
         self.restoreStatesByUser = [:]
+        self.categoryChangeContinuationsByUser = [:]
+    }
+
+    func categoryChanges(userId: UUID) -> AsyncStream<[StudyCategory]> {
+        let streamId = UUID()
+
+        return AsyncStream { continuation in
+            var continuationsForUser = categoryChangeContinuationsByUser[userId] ?? [:]
+            continuationsForUser[streamId] = continuation
+            categoryChangeContinuationsByUser[userId] = continuationsForUser
+
+            continuation.onTermination = { @Sendable [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.categoryChangeContinuationsByUser[userId]?[streamId] = nil
+                    if self?.categoryChangeContinuationsByUser[userId]?.isEmpty == true {
+                        self?.categoryChangeContinuationsByUser[userId] = nil
+                    }
+                }
+            }
+
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                await self.ensureRestored(userId: userId)
+                self.emitCategoryChanges(for: userId)
+            }
+        }
     }
 
     func restoreState(for userId: UUID) async -> RestoreState {
@@ -52,6 +79,8 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
         do {
             try categories.forEach { try saveCategory($0) }
             try context.save()
+            let userIds = Set(categories.map(\.userId))
+            userIds.forEach { emitCategoryChanges(for: $0) }
             logger.info("Saved \(categories.count) local categories")
         } catch {
             logger.error("Failed to save local categories")
@@ -63,6 +92,7 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
         do {
             try saveCategory(category)
             try context.save()
+            emitCategoryChanges(for: category.userId)
             logger.info("Saved local category \(category.categoryId.uuidString)")
         } catch {
             logger.error("Failed to save local category \(category.categoryId.uuidString)")
@@ -76,6 +106,7 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
                 context.delete(category)
                 try context.save()
             }
+            emitCategoryChanges(for: userId)
             logger.info("Deleted local category \(id.uuidString)")
         } catch {
             logger.error("Failed to delete local category \(id.uuidString)")
@@ -89,6 +120,7 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
                 context.delete(category)
                 try context.save()
             }
+            emitCategoryChanges(for: userId)
             logger.info("Rolled back local category create \(id.uuidString)")
         } catch {
             logger.error("Failed to rollback local category create \(id.uuidString)")
@@ -100,6 +132,7 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
         do {
             try saveCategory(previousCategory)
             try context.save()
+            emitCategoryChanges(for: previousCategory.userId)
             logger.info("Rolled back local category update \(previousCategory.categoryId.uuidString)")
         } catch {
             logger.error("Failed to rollback local category update \(previousCategory.categoryId.uuidString)")
@@ -111,6 +144,7 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
         do {
             try saveCategory(deletedCategory)
             try context.save()
+            emitCategoryChanges(for: deletedCategory.userId)
             logger.info("Rolled back local category delete \(deletedCategory.categoryId.uuidString)")
         } catch {
             logger.error("Failed to rollback local category delete \(deletedCategory.categoryId.uuidString)")
@@ -150,10 +184,16 @@ private extension CategoryStoreLocal {
         do {
             _ = try fetchAllStoredCategories(userId: userId)
             restoreStatesByUser[userId] = .restored
+            emitCategoryChanges(for: userId)
             logger.info("Restored local categories for user \(userId.uuidString)")
         } catch {
             restoreStatesByUser[userId] = .failed
             logger.error("Failed to restore local categories for user \(userId.uuidString)")
         }
+    }
+
+    func emitCategoryChanges(for userId: UUID) {
+        let categories = (try? getAll(userId: userId)) ?? []
+        categoryChangeContinuationsByUser[userId]?.values.forEach { $0.yield(categories) }
     }
 }

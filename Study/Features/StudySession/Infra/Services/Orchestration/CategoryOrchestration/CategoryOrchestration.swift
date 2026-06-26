@@ -29,6 +29,17 @@ final class CategoryOrchestration: CategoryOrchestrationProtocol {
         self.makeId = makeId
         self.now = now
     }
+
+    func categoryChanges() -> AsyncStream<[StudyCategory]> {
+        guard let userId = currentUserId() else {
+            return AsyncStream { continuation in
+                continuation.yield([])
+                continuation.finish()
+            }
+        }
+
+        return categoryLocal.categoryChanges(userId: userId)
+    }
     
     func loadCategories(onBackendRefresh: @escaping CategoriesRefreshCallback) throws -> [StudyCategory] {
         guard let userId = currentUserId() else {

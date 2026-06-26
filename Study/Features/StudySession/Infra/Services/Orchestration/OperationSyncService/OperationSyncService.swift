@@ -27,14 +27,14 @@ final class OperationSyncService: OperationSyncServiceProtocol {
     }
     
     func sync() async throws -> OperationSyncResult {
-        guard let userId = currentUserId() else { return .failure }
+        guard let userId = currentUserId() else { return .stoppedOnFailure }
         guard !isSyncing else { return .alreadyRunning }
         isSyncing = true
         defer { isSyncing = false }
 
         await offlineOperationQueue.ensureRestored(userId: userId)
 
-        guard try await flushPendingOperations(userId: userId) else { return .failure }
+        guard try await flushPendingOperations(userId: userId) else { return .stoppedOnFailure }
         return .completed
     }
 }

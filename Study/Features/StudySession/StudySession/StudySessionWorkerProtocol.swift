@@ -10,6 +10,8 @@ typealias ShouldRollback = @MainActor @Sendable (Error) -> Void
 
 @MainActor
 protocol StudySessionWorkerProtocol {
+    func categoryChanges() -> AsyncStream<[StudyCategory]>
+    func activeStudySessionChanges() async -> AsyncStream<LocalStudySession?>
     
     func createCategory(
         _ dto: CreateCategoryDTO,

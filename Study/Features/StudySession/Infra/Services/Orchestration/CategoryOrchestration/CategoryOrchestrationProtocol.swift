@@ -7,6 +7,7 @@ import Foundation
 
 @MainActor
 protocol CategoryOrchestrationProtocol {
+    func categoryChanges() -> AsyncStream<[StudyCategory]>
     func loadCategories(onBackendRefresh: @escaping CategoriesRefreshCallback) throws -> [StudyCategory]
     
     func create(

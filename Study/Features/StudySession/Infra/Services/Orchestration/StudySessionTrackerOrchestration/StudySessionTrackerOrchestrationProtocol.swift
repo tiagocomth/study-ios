@@ -6,6 +6,7 @@
 import Foundation
 
 nonisolated protocol StudySessionTrackerOrchestrationProtocol {
+    func activeSessionChanges() async -> AsyncStream<LocalStudySession?>
     func getActiveSession() async -> LocalStudySession?
     func start(categoryId: UUID) async throws
     func pause() async throws
