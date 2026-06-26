@@ -27,14 +27,14 @@ final actor StoreKitPaymentService: PaymentProtocol {
     }
 
     func loadProducts() async throws(PaymentError) -> [PaymentProduct] {
-        await logger.info("Loading products from StoreKit")
+        logger.info("Loading products from StoreKit")
 
         let storeProducts: [Product]
 
         do {
             storeProducts = try await Product.products(for: ProductIdentifier.allCases.map(\.id))
         } catch {
-            await logger.error("Failed to load products: \(error.localizedDescription)")
+            logger.error("Failed to load products: \(error.localizedDescription)")
             throw .productLoadingFailed(reason: error.localizedDescription)
         }
 
@@ -47,12 +47,12 @@ final actor StoreKitPaymentService: PaymentProtocol {
             productsByIdentifier[identifier].flatMap(PaymentProduct.init)
         }
 
-        await logger.info("Loaded \(paymentProducts.count) products")
+        logger.info("Loaded \(paymentProducts.count) products")
         return paymentProducts
     }
 
     func purchase(_ identifier: ProductIdentifier) async throws(PaymentError) -> PaymentPurchaseResult {
-        await logger.info("Starting purchase for \(identifier.id)")
+        logger.info("Starting purchase for \(identifier.id)")
 
         do {
             let product = try await storeProduct(for: identifier)
@@ -63,16 +63,16 @@ final actor StoreKitPaymentService: PaymentProtocol {
                 let transaction = try verified(verificationResult, fallbackIdentifier: identifier)
                 await apply(transaction: transaction, identifier: identifier)
                 await transaction.finish()
-                await logger.info("Purchase finished successfully for \(identifier.id)")
+                logger.info("Purchase finished successfully for \(identifier.id)")
                 return .success(identifier)
 
             case .pending:
                 await emit(.pending(identifier))
-                await logger.info("Purchase pending for \(identifier.id)")
+                logger.info("Purchase pending for \(identifier.id)")
                 return .pending(identifier)
 
             case .userCancelled:
-                await logger.info("Purchase cancelled by user for \(identifier.id)")
+                logger.info("Purchase cancelled by user for \(identifier.id)")
                 return .cancelled(identifier)
 
             @unknown default:
@@ -94,7 +94,7 @@ final actor StoreKitPaymentService: PaymentProtocol {
     }
 
     func refreshEntitlements() async {
-        await logger.info("Refreshing current entitlements")
+        logger.info("Refreshing current entitlements")
         await syncCurrentEntitlements()
     }
 
@@ -102,11 +102,11 @@ final actor StoreKitPaymentService: PaymentProtocol {
         eventCallback = callback
 
         guard transactionListenerTask == nil else {
-            await logger.debug("Transaction listener already running")
+            logger.debug("Transaction listener already running")
             return
         }
 
-        await logger.info("Starting transaction listener")
+        logger.info("Starting transaction listener")
         transactionListenerTask = Task { [weak self] in
             for await result in Transaction.updates {
                 guard !Task.isCancelled else { break }
@@ -116,7 +116,7 @@ final actor StoreKitPaymentService: PaymentProtocol {
     }
 
     func stopTransactionListener() async {
-        await logger.info("Stopping transaction listener")
+        logger.info("Stopping transaction listener")
         transactionListenerTask?.cancel()
         transactionListenerTask = nil
         eventCallback = nil
@@ -135,12 +135,12 @@ private extension StoreKitPaymentService {
         do {
             products = try await Product.products(for: [id])
         } catch {
-            await logger.error("Failed to load product \(id): \(error.localizedDescription)")
+            logger.error("Failed to load product \(id): \(error.localizedDescription)")
             throw .productLoadingFailed(reason: error.localizedDescription)
         }
 
         guard let product = products.first(where: { $0.id == id }) else {
-            await logger.error("Product not found: \(id)")
+            logger.error("Product not found: \(id)")
             throw PaymentError.productNotFound(identifier)
         }
 
@@ -153,7 +153,7 @@ private extension StoreKitPaymentService {
             let transaction = try verified(result, fallbackIdentifier: nil)
             let identifier = try productIdentifier(for: transaction)
 
-            await logger.debug("Received transaction update for \(identifier.id)")
+            logger.debug("Received transaction update for \(identifier.id)")
             await apply(transaction: transaction, identifier: identifier)
             await transaction.finish()
         } catch {
@@ -191,7 +191,7 @@ private extension StoreKitPaymentService {
             await emitInactiveEventForLatestTransaction(identifier)
         }
 
-        await logger.info("Active entitlements refreshed: \(activeIdentifiers.map(\.id).joined(separator: ", "))")
+        logger.info("Active entitlements refreshed: \(activeIdentifiers.map(\.id).joined(separator: ", "))")
     }
 
     private func apply(transaction: Transaction, identifier: ProductIdentifier) async {

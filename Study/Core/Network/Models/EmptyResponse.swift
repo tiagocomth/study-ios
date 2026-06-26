@@ -13,4 +13,4 @@ import Foundation
 /// ```swift
 /// let _: EmptyResponse = try await client.request(endpoint)
 /// ```
-struct EmptyResponse: Decodable {}
+nonisolated struct EmptyResponse: Decodable, Sendable {}

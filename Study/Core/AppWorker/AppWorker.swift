@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 final class AppWorker {
 
     /// Single source of truth for the logged-in user, owned by the composition root.
@@ -19,9 +20,14 @@ final class AppWorker {
 
     private let appCoordinator: AppCoordinator
     private let paymentLogger: DomainLogging
+    private let connectivityMonitorService: ConnectivityMonitorServiceProtocol
+    private let appLifecycleService: AppLifecycleServiceProtocol
+    private let studySessionFactory: StudySessionFactory
+    private var appTasks: [Task<Void, Never>]
 
     init() {
         let session = UserSessionService()
+        session.restore()
         self.userSessionService = session
         self.paymentLogger = PaymentLogger()
         self.paymentService = StoreKitPaymentService(logger: paymentLogger)
@@ -31,6 +37,11 @@ final class AppWorker {
         self.apiClient = APIClient(
             tokenProvider: TokenProvider { session.token }
         )
+        self.studySessionFactory = StudySessionFactory(apiClient: apiClient, userSession: session)
+        
+        self.connectivityMonitorService = ConnectivityMonitorService()
+        self.appLifecycleService = AppLifecycleService()
+        self.appTasks = []
 
         // Auto-logout whenever a request comes back 401. `logout()` is
         // `@MainActor`, so hop back to the main actor from the interceptor.
@@ -40,17 +51,33 @@ final class AppWorker {
 
         self.appCoordinator = AppCoordinator()
         configurePayments()
+        configureStudySessionSync()
     }
 
     func makeAuthCoordinator() -> AuthCoordinator {
         return appCoordinator.makeAuthCoordinator(apiClient: apiClient, session: userSessionService)
     }
 
+    func makeStudySessionCoordinator() -> StudySessionCoordinator {
+        appCoordinator.makeStudySessionCoordinator(factory: studySessionFactory)
+    }
+
+    func updateLifecycleState(_ state: AppLifecycleState) {
+        appLifecycleService.updateState(state)
+    }
+    
+    deinit {
+        //TODO: Fazer os stops tbm
+        for task in self.appTasks {
+            task.cancel()
+        }
+    }
 }
 
 private extension AppWorker {
-    func configurePayments() {
-        Task {
+    
+    private func configurePayments() {
+        let paymentTask = Task {
             await paymentService.startTransactionListener { [paymentLogger] event in
                 paymentLogger.info("App received payment event: \(event.logDescription)")
                 // TODO: implementar o uso do event
@@ -59,7 +86,39 @@ private extension AppWorker {
 
             await paymentService.refreshEntitlements()
         }
+        
+        appTasks.append(paymentTask)
+    }
+
+    private func configureStudySessionSync() {
+        connectivityMonitorService.start()
+
+        Task { [weak self] in
+            await self?.studySessionFactory.restoreLocalState()
+            await self?.studySessionFactory.expireSessionIfNeeded()
+        }
+
+        let connectivityChanges = connectivityMonitorService.connectivityChanges
+        let connectivityTask = Task { [weak self] in
+            for await isConnected in connectivityChanges {
+                guard isConnected else { continue }
+                await self?.studySessionFactory.expireSessionIfNeeded()
+                await self?.studySessionFactory.syncPendingOperations()
+            }
+        }
+        
+        let stateChanges = appLifecycleService.stateChanges
+        let paymentService = paymentService
+        
+        let appLifeCycleTask = Task { [weak self] in
+            for await state in stateChanges {
+                guard state == .active else { continue }
+                await paymentService.refreshEntitlements()
+                await self?.studySessionFactory.expireSessionIfNeeded()
+                await self?.studySessionFactory.syncPendingOperations()
+            }
+        }
+        
+        appTasks.append(contentsOf: [connectivityTask, appLifeCycleTask])
     }
 }
-
-//TODO: Implementar o monitoramento de quando voltar para isActive a tela, dando um paymentService.refreshEntitlements()
