@@ -9,7 +9,7 @@ import Foundation
 final class CategoryManager: CategoryManagerProtocol {
     private let categoryAPI: CategoryAPIProtocol
     private let categoryLocal: CategoryStoreLocalProtocol
-    private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
+    private let operationManager: OperationManagerProtocol
     private let currentUserId: () -> UUID?
     private let makeId: @Sendable () -> UUID
     private let now: @Sendable () -> Date
@@ -17,14 +17,14 @@ final class CategoryManager: CategoryManagerProtocol {
     init(
         categoryAPI: CategoryAPIProtocol,
         categoryLocal: CategoryStoreLocalProtocol,
-        offlineOperationQueue: OfflineOperationQueueLocalProtocol,
+        operationManager: OperationManagerProtocol,
         currentUserId: @escaping () -> UUID?,
         makeId: @escaping @Sendable () -> UUID = { UUID() },
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.categoryAPI = categoryAPI
         self.categoryLocal = categoryLocal
-        self.offlineOperationQueue = offlineOperationQueue
+        self.operationManager = operationManager
         self.currentUserId = currentUserId
         self.makeId = makeId
         self.now = now
@@ -49,7 +49,6 @@ final class CategoryManager: CategoryManagerProtocol {
         let localCategories = try categoryLocal.getAll(userId: userId)
         
         Task { @MainActor [weak self] in
-            
             guard let self else { return }
 
             guard let backendCategories = try? await refreshCategories(userId: userId) else { return }
@@ -152,19 +151,16 @@ final class CategoryManager: CategoryManagerProtocol {
 }
 
 private extension CategoryManager {
-    
-    func hasPendingOperations(userId: UUID) async -> Bool {
-        await offlineOperationQueue.ensureRestored(userId: userId)
-        return await offlineOperationQueue.peek(userId: userId) != nil
-    }
-
     private func refreshCategories(userId: UUID) async throws -> [StudyCategory]? {
         await categoryLocal.ensureRestored(userId: userId)
-        await offlineOperationQueue.ensureRestored(userId: userId)
-        guard await offlineOperationQueue.peek(userId: userId) == nil else { return nil }
+
+        let hasPendingBeforeFetch = await operationManager.hasPendingOperations(userId: userId)
+        guard !hasPendingBeforeFetch else { return nil }
 
         let backendCategories = try await categoryAPI.getAll()
-        guard await offlineOperationQueue.peek(userId: userId) == nil else { return nil }
+
+        let hasPendingAfterFetch = await operationManager.hasPendingOperations(userId: userId)
+        guard !hasPendingAfterFetch else { return nil }
 
         try categoryLocal.saveAll(backendCategories)
         return backendCategories
@@ -176,15 +172,13 @@ private extension CategoryManager {
         categoryId: UUID,
         onShouldRollback: @escaping ShouldRollback
     ) async {
-        if await hasPendingOperations(userId: userId) {
-            try? await enqueue(.createCategory(dto), userId: userId)
-            return
+        let result = await operationManager.dispatch(.createCategory(dto), userId: userId) { () throws(NetworkError) -> Void in
+            try await categoryAPI.create(dto)
         }
 
-        await sendCreateCategory(
-            userId: userId,
-            id: categoryId,
-            dto,
+        await handleDispatchResult(
+            result,
+            rollback: { try categoryLocal.rollbackCreate(id: categoryId, userId: userId) },
             onShouldRollback: onShouldRollback
         )
     }
@@ -196,16 +190,13 @@ private extension CategoryManager {
         previousCategory: StudyCategory,
         onShouldRollback: @escaping ShouldRollback
     ) async {
-        if await hasPendingOperations(userId: userId) {
-            try? await enqueue(.updateCategory(id: id, dto: dto), userId: userId)
-            return
+        let result = await operationManager.dispatch(.updateCategory(id: id, dto: dto), userId: userId) { () throws(NetworkError) -> Void in
+            try await categoryAPI.update(id: id, dto: dto)
         }
 
-        await sendUpdateCategory(
-            userId: userId,
-            id: id,
-            dto: dto,
-            previousCategory: previousCategory,
+        await handleDispatchResult(
+            result,
+            rollback: { try categoryLocal.rollbackUpdate(previousCategory: previousCategory) },
             onShouldRollback: onShouldRollback
         )
     }
@@ -216,95 +207,25 @@ private extension CategoryManager {
         deletedCategory: StudyCategory,
         onShouldRollback: @escaping ShouldRollback
     ) async {
-        if await hasPendingOperations(userId: userId) {
-            try? await enqueue(.deleteCategory(id), userId: userId)
-            return
+        let result = await operationManager.dispatch(.deleteCategory(id), userId: userId) { () throws(NetworkError) -> Void in
+            try await categoryAPI.delete(id: id)
         }
 
-        await sendDeleteCategory(
-            userId: userId,
-            id: id,
-            deletedCategory: deletedCategory,
+        await handleDispatchResult(
+            result,
+            rollback: { try categoryLocal.rollbackDelete(deletedCategory: deletedCategory) },
             onShouldRollback: onShouldRollback
         )
     }
-    
-    private func sendCreateCategory(
-        userId: UUID,
-        id: UUID,
-        _ dto: CreateCategoryDTO,
+
+    func handleDispatchResult(
+        _ result: OperationDispatchResult,
+        rollback: () throws -> Void,
         onShouldRollback: @escaping ShouldRollback
     ) async {
-        do {
-            try await categoryAPI.create(dto)
-        } catch {
-            do {
-                if OfflineRetryPolicy.shouldEnqueue(error) {
-                    try await enqueue(.createCategory(dto), userId: userId)
-                    return
-                }
-                
-                try categoryLocal.rollbackCreate(id: id, userId: userId)
-                onShouldRollback(error)
-            } catch {}
-        }
-    }
-    
-    private func sendUpdateCategory(
-        userId: UUID,
-        id: UUID,
-        dto: UpdateCategoryDTO,
-        previousCategory: StudyCategory,
-        onShouldRollback: @escaping ShouldRollback
-    ) async {
-        do {
-            try await categoryAPI.update(id: id, dto: dto)
-        } catch {
-            do {
-                if OfflineRetryPolicy.shouldEnqueue(error) {
-                    try await enqueue(.updateCategory(id: id, dto: dto), userId: userId)
-                    return
-                }
-                
-                try categoryLocal.rollbackUpdate(previousCategory: previousCategory)
-                onShouldRollback(error)
-            } catch {}
-        }
-    }
-    
-    private func sendDeleteCategory(
-        userId: UUID,
-        id: UUID,
-        deletedCategory: StudyCategory,
-        onShouldRollback: @escaping ShouldRollback
-    ) async {
-        do {
-            try await categoryAPI.delete(id: id)
-        } catch {
-            do {
-                if OfflineRetryPolicy.shouldEnqueue(error) {
-                    try await enqueue(.deleteCategory(id), userId: userId)
-                    return
-                }
-                
-                try categoryLocal.rollbackDelete(deletedCategory: deletedCategory)
-                onShouldRollback(error)
-            } catch {}
-        }
-    }
-    
-    private func enqueue(_ kind: PendingOfflineOperationKind, userId: UUID) async throws {
-        await offlineOperationQueue.ensureRestored(userId: userId)
-        try await offlineOperationQueue.enqueue(makeOperation(kind), userId: userId)
-    }
-    
-    private func makeOperation(_ kind: PendingOfflineOperationKind) -> PendingOfflineOperation {
-        PendingOfflineOperation(
-            id: makeId(),
-            createdAt: now(),
-            lastAttemptAt: nil,
-            attemptCount: 0,
-            kind: kind
-        )
+        guard case .failed(let error) = result else { return }
+
+        try? rollback()
+        onShouldRollback(error)
     }
 }

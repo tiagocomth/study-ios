@@ -41,6 +41,11 @@ final class StudySessionFactory {
         let categoryLocal = CategoryStoreLocal(context: modelContainer.mainContext)
         let studySessionTracker = StudySessionTrackerLocal(now: now, makeId: makeId)
         let offlineOperationQueue = OfflineOperationQueueLocal(now: now)
+        let operationManager = OperationManager(
+            offlineOperationQueue: offlineOperationQueue,
+            makeId: makeId,
+            now: now
+        )
         let offlineOperationSender = OfflineOperationSender(
             studySessionAPI: studySessionAPI,
             categoryAPI: categoryAPI
@@ -60,7 +65,7 @@ final class StudySessionFactory {
         let categoryManager = CategoryManager(
             categoryAPI: categoryAPI,
             categoryLocal: categoryLocal,
-            offlineOperationQueue: offlineOperationQueue,
+            operationManager: operationManager,
             currentUserId: currentUserId,
             makeId: makeId,
             now: now
@@ -68,10 +73,8 @@ final class StudySessionFactory {
         let studySessionManager = StudySessionManager(
             studySessionTracker: studySessionTracker,
             studySessionAPI: studySessionAPI,
-            offlineOperationQueue: offlineOperationQueue,
-            currentUserId: currentUserId,
-            makeId: makeId,
-            now: now
+            operationManager: operationManager,
+            currentUserId: currentUserId
         )
 
         self.categoryLocal = categoryLocal

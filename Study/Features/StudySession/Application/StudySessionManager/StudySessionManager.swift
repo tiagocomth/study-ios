@@ -8,25 +8,19 @@ import Foundation
 final class StudySessionManager: StudySessionManagerProtocol {
     private let studySessionTracker: StudySessionTrackerLocalProtocol
     private let studySessionAPI: StudySessionAPIProtocol
-    private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
+    private let operationManager: OperationManagerProtocol
     private let currentUserId: () -> UUID?
-    private let makeId: @Sendable () -> UUID
-    private let now: @Sendable () -> Date
     
     init(
         studySessionTracker: StudySessionTrackerLocalProtocol,
         studySessionAPI: StudySessionAPIProtocol,
-        offlineOperationQueue: OfflineOperationQueueLocalProtocol,
-        currentUserId: @escaping () -> UUID?,
-        makeId: @escaping @Sendable () -> UUID = { UUID() },
-        now: @escaping @Sendable () -> Date = { Date() }
+        operationManager: OperationManagerProtocol,
+        currentUserId: @escaping () -> UUID?
     ) {
         self.studySessionTracker = studySessionTracker
         self.studySessionAPI = studySessionAPI
-        self.offlineOperationQueue = offlineOperationQueue
+        self.operationManager = operationManager
         self.currentUserId = currentUserId
-        self.makeId = makeId
-        self.now = now
     }
 
     func activeSessionChanges() async -> AsyncStream<LocalStudySession?> {
@@ -96,78 +90,42 @@ final class StudySessionManager: StudySessionManagerProtocol {
 }
 
 private extension StudySessionManager {
-    func hasPendingOperations(userId: UUID) async -> Bool {
-        await offlineOperationQueue.ensureRestored(userId: userId)
-        return await offlineOperationQueue.peek(userId: userId) != nil
-    }
-    
     func sendRemote(_ action: StudySessionTrackerAction, userId: UUID) async {
-        if await hasPendingOperations(userId: userId) {
-            await enqueue(action, userId: userId)
+        switch action {
+        case .resumedAndFinished(let sessionId, let resumeDTO, let endDTO):
+            await sendResumeAndFinish(
+                sessionId: sessionId,
+                resumeDTO: resumeDTO,
+                endDTO: endDTO,
+                userId: userId
+            )
+
+        default:
+            _ = await operationManager.dispatch(action.pendingOperationKind, userId: userId) { () async throws(NetworkError) -> Void in
+                try await sendRemoteRequest(for: action)
+            }
+        }
+    }
+
+    func sendRemoteRequest(for action: StudySessionTrackerAction) async throws(NetworkError) {
+        switch action {
+        case .started(let dto):
+            try await studySessionAPI.start(dto)
+
+        case .paused(let sessionId, let dto):
+            try await studySessionAPI.pause(id: sessionId, dto: dto)
+
+        case .resumed(let sessionId, let dto):
+            try await studySessionAPI.resume(id: sessionId, dto: dto)
+
+        case .finished(let sessionId, let dto):
+            try await studySessionAPI.finish(id: sessionId, dto: dto)
+
+        case .resumedAndFinished:
             return
         }
-
-        switch action {
-        case .started(let dto):
-            await sendOrEnqueue(.startStudySession(dto), userId: userId) { () async throws(NetworkError) in
-                try await studySessionAPI.start(dto)
-            }
-            
-        case .paused(let sessionId, let dto):
-            await sendOrEnqueue(.pauseStudySession(id: sessionId, dto: dto), userId: userId) { () async throws(NetworkError) in
-                try await studySessionAPI.pause(id: sessionId, dto: dto)
-            }
-            
-        case .resumed(let sessionId, let dto):
-            await sendOrEnqueue(.resumeStudySession(id: sessionId, dto: dto), userId: userId) { () async throws(NetworkError) in
-                try await studySessionAPI.resume(id: sessionId, dto: dto)
-            }
-            
-        case .finished(let sessionId, let dto):
-            await sendOrEnqueue(.endStudySession(id: sessionId, dto: dto), userId: userId) { () async throws(NetworkError) in
-                try await studySessionAPI.finish(id: sessionId, dto: dto)
-            }
-            
-        case .resumedAndFinished(let sessionId, let resumeDTO, let endDTO):
-            await sendResumeAndFinish(sessionId: sessionId, resumeDTO: resumeDTO, endDTO: endDTO, userId: userId)
-        }
     }
 
-    private func enqueue(_ action: StudySessionTrackerAction, userId: UUID) async {
-        switch action {
-        case .started(let dto):
-            try? await offlineOperationQueue.enqueue(makeOperation(.startStudySession(dto)), userId: userId)
-
-        case .paused(let sessionId, let dto):
-            try? await offlineOperationQueue.enqueue(makeOperation(.pauseStudySession(id: sessionId, dto: dto)), userId: userId)
-
-        case .resumed(let sessionId, let dto):
-            try? await offlineOperationQueue.enqueue(makeOperation(.resumeStudySession(id: sessionId, dto: dto)), userId: userId)
-
-        case .finished(let sessionId, let dto):
-            try? await offlineOperationQueue.enqueue(makeOperation(.endStudySession(id: sessionId, dto: dto)), userId: userId)
-
-        case .resumedAndFinished(let sessionId, let resumeDTO, let endDTO):
-            let operations = [
-                makeOperation(.resumeStudySession(id: sessionId, dto: resumeDTO)),
-                makeOperation(.endStudySession(id: sessionId, dto: endDTO))
-            ]
-            try? await offlineOperationQueue.enqueue(operations, userId: userId)
-        }
-    }
-    
-    private func sendOrEnqueue(
-        _ kind: PendingOfflineOperationKind,
-        userId: UUID,
-        sendRemote: () async throws(NetworkError) -> Void
-    ) async {
-        do {
-            try await sendRemote()
-        } catch {
-            try? await enqueue(error, kind, userId: userId)
-        }
-    }
-    
     func sendResumeAndFinish(
         sessionId: UUID,
         resumeDTO: ResumeStudySessionDTO,
@@ -176,46 +134,37 @@ private extension StudySessionManager {
     ) async {
         let resumeKind = PendingOfflineOperationKind.resumeStudySession(id: sessionId, dto: resumeDTO)
         let finishKind = PendingOfflineOperationKind.endStudySession(id: sessionId, dto: endDTO)
-        
-        do {
+
+        let resumeResult = await operationManager.dispatch(resumeKind, userId: userId) { () async throws(NetworkError) -> Void in
             try await studySessionAPI.resume(id: sessionId, dto: resumeDTO)
-        } catch {
-            try? await enqueue(error, [resumeKind, finishKind], userId: userId)
+        }
+
+        switch resumeResult {
+        case .sent:
+            _ = await operationManager.dispatch(finishKind, userId: userId) { () async throws(NetworkError) -> Void in
+                try await studySessionAPI.finish(id: sessionId, dto: endDTO)
+            }
+        case .enqueued:
+            try? await operationManager.enqueue(finishKind, userId: userId)
+        case .failed:
             return
         }
-        
-        await sendOrEnqueue(finishKind, userId: userId) { () async throws(NetworkError) in
-            try await studySessionAPI.finish(id: sessionId, dto: endDTO)
+    }
+}
+
+private extension StudySessionTrackerAction {
+    var pendingOperationKind: PendingOfflineOperationKind {
+        switch self {
+        case .started(let dto):
+            .startStudySession(dto)
+        case .paused(let sessionId, let dto):
+            .pauseStudySession(id: sessionId, dto: dto)
+        case .resumed(let sessionId, let dto):
+            .resumeStudySession(id: sessionId, dto: dto)
+        case .finished(let sessionId, let dto):
+            .endStudySession(id: sessionId, dto: dto)
+        case .resumedAndFinished(let sessionId, let resumeDTO, _):
+            .resumeStudySession(id: sessionId, dto: resumeDTO)
         }
-    }
-    
-    func enqueue(
-        _ error: NetworkError,
-        _ kind: PendingOfflineOperationKind,
-        userId: UUID
-    ) async throws {
-        guard OfflineRetryPolicy.shouldEnqueue(error) else { return }
-        await offlineOperationQueue.ensureRestored(userId: userId)
-        try await offlineOperationQueue.enqueue(makeOperation(kind), userId: userId)
-    }
-    
-    func enqueue(
-        _ error: NetworkError,
-        _ kinds: [PendingOfflineOperationKind],
-        userId: UUID
-    ) async throws {
-        guard OfflineRetryPolicy.shouldEnqueue(error) else { return }
-        await offlineOperationQueue.ensureRestored(userId: userId)
-        try await offlineOperationQueue.enqueue(kinds.map(makeOperation), userId: userId)
-    }
-    
-    func makeOperation(_ kind: PendingOfflineOperationKind) -> PendingOfflineOperation {
-        PendingOfflineOperation(
-            id: makeId(),
-            createdAt: now(),
-            lastAttemptAt: nil,
-            attemptCount: 0,
-            kind: kind
-        )
     }
 }
