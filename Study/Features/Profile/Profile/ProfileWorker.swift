@@ -35,6 +35,7 @@ final class ProfileWorker: ProfileWorkerProtocol {
         let updatedUser = User(
             id: profileDTO.userId,
             name: profileDTO.name,
+            isPremium: profileDTO.isPremium,
             photo: profileDTO.photoId,
             individualHoursTotal: userSession.currentUser?.individualHoursTotal ?? 0.0,
             groupHoursTotal: userSession.currentUser?.groupHoursTotal ?? 0.0
