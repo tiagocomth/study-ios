@@ -51,12 +51,12 @@ final actor StoreKitPaymentService: PaymentProtocol {
         return paymentProducts
     }
 
-    func purchase(_ identifier: ProductIdentifier) async throws(PaymentError) -> PaymentPurchaseResult {
+    func purchase(_ identifier: ProductIdentifier, appAccountToken: UUID) async throws(PaymentError) -> PaymentPurchaseResult {
         logger.info("Starting purchase for \(identifier.id)")
 
         do {
             let product = try await storeProduct(for: identifier)
-            let result = try await product.purchase()
+            let result = try await product.purchase(options: [.appAccountToken(appAccountToken)])
 
             switch result {
             case .success(let verificationResult):
@@ -96,6 +96,10 @@ final actor StoreKitPaymentService: PaymentProtocol {
     func refreshEntitlements() async {
         logger.info("Refreshing current entitlements")
         await syncCurrentEntitlements()
+    }
+
+    func isPurchased(_ identifier: ProductIdentifier) async -> Bool {
+        return purchasedIdentifiers.contains(identifier)
     }
 
     func startTransactionListener(callback: @escaping PaymentEventCallback) async {
