@@ -52,9 +52,10 @@ struct PremiumView: View {
 #Preview {
     struct DummyPaymentService: PaymentProtocol {
         func loadProducts() async throws(PaymentError) -> [PaymentProduct] { [] }
-        func purchase(_ identifier: ProductIdentifier) async throws(PaymentError) -> PaymentPurchaseResult {
+        func purchase(_ identifier: ProductIdentifier, appAccountToken: UUID) async throws(PaymentError) -> PaymentPurchaseResult {
             return .success(.premiumMonthly)
         }
+        func isPurchased(_ identifier: ProductIdentifier) async -> Bool { false }
         func refreshEntitlements() async {}
         func startTransactionListener(callback: @escaping PaymentEventCallback) async {}
         func stopTransactionListener() async {}
