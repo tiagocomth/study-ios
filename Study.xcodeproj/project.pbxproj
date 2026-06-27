@@ -28,6 +28,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4173C07C2FEEEFEA00B5A8AC /* Exceptions for "Study" folder in "StudyTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Config/Config.xcconfig,
+			);
+			target = DA54FED52FE627A2009D2203 /* StudyTests */;
+		};
 		A54FB3900000000000000001 /* Exceptions for "Study" folder in "Study" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -43,6 +50,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				A54FB3900000000000000001 /* Exceptions for "Study" folder in "Study" target */,
+				4173C07C2FEEEFEA00B5A8AC /* Exceptions for "Study" folder in "StudyTests" target */,
 			);
 			path = Study;
 			sourceTree = "<group>";
@@ -429,7 +437,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Study/Config/Entitlements/StudyProduction.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "3rd Party Mac Developer Application";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Mac Developer";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -465,7 +473,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.academy.studyapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = StudyAppProdProfile;
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = StudyAppDevProfile;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = macosx;
