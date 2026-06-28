@@ -36,6 +36,7 @@ final class ProfileWorker: ProfileWorkerProtocol {
             id: profileDTO.userId,
             name: profileDTO.name,
             photo: profileDTO.photoId,
+            isPremium: profileDTO.isPremium,
             individualHoursTotal: userSession.currentUser?.individualHoursTotal ?? 0.0,
             groupHoursTotal: userSession.currentUser?.groupHoursTotal ?? 0.0
         )

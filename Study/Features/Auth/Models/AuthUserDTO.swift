@@ -9,6 +9,7 @@ import Foundation
 struct AuthUserDTO: Decodable {
     let id: String
     let email: String
+    let isPremium: Bool
 }
 
 extension AuthUserDTO {
@@ -20,6 +21,7 @@ extension AuthUserDTO {
             id: id,
             name: name ?? email,
             photo: nil,
+            isPremium: isPremium,
             individualHoursTotal: 0,
             groupHoursTotal: 0
         )
