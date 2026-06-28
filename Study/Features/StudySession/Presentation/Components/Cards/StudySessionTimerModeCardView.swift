@@ -39,7 +39,6 @@ struct StudySessionTimerModeCardView: View {
                     .foregroundStyle(AppColors.neutralBlack)
                     .multilineTextAlignment(.center)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(GlobalConfiguration.normalPadding)
             .background(AppColors.primaryLight)
             .overlay {

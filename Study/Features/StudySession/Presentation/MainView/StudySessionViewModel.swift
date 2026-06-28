@@ -28,7 +28,11 @@ final class StudySessionViewModel: ObservableObject {
     @Published var editingCategoryId: UUID?
     @Published var categoryPendingDeletion: StudyCategory?
     @Published var isTimerModePickerPresented = false
+    @Published var isCountdownDurationPickerPresented = false
     @Published var selectedTimerModeOption: TimerModeOption?
+    @Published var countdownHoursText = "00"
+    @Published var countdownMinutesText = "05"
+    @Published var countdownSecondsText = "00"
 
     init(worker: StudySessionWorkerProtocol) {
         self.worker = worker
@@ -66,7 +70,7 @@ final class StudySessionViewModel: ObservableObject {
     }
     
     func shouldDisableClick() -> Bool {
-        categoryPendingDeletion != nil || isTimerModePickerPresented
+        categoryPendingDeletion != nil || isTimerModePickerPresented || isCountdownDurationPickerPresented
     }
 }
 
@@ -186,6 +190,10 @@ extension StudySessionViewModel {
     var canConfirmTimerModeSelection: Bool {
         selectedTimerModeOption != nil
     }
+
+    var canConfirmCountdownDurationSelection: Bool {
+        countdownDurationInSeconds >= 300
+    }
 }
 
 private extension StudySessionViewModel {
@@ -219,16 +227,84 @@ extension StudySessionViewModel {
         isTimerModePickerPresented = false
     }
 
+    func dismissTimerOverlays() {
+        dismissTimerModePicker()
+        dismissCountdownDurationPicker()
+    }
+
     func selectTimerModeOption(_ option: TimerModeOption) {
         selectedTimerModeOption = option
     }
 
     func confirmTimerModeSelection() {
-        guard canConfirmTimerModeSelection else { return }
+        guard let selectedTimerModeOption else { return }
 
-        // TODO: no proximo passo, ligar cada opcao ao fluxo de configuracao
-        // e inicio real da sessao de estudos.
-        selectedTimerModeOption = nil
-        isTimerModePickerPresented = false
+        switch selectedTimerModeOption {
+        case .stopwatch:
+            // TODO: ligar configuracao e inicio real da sessao para cronometro.
+            self.selectedTimerModeOption = nil
+            isTimerModePickerPresented = false
+        case .countdown:
+            resetCountdownDuration()
+            isTimerModePickerPresented = false
+            isCountdownDurationPickerPresented = true
+        }
+    }
+
+    func dismissCountdownDurationPicker() {
+        isCountdownDurationPickerPresented = false
+    }
+
+    func navigateBackFromCountdownDurationPicker() {
+        isCountdownDurationPickerPresented = false
+        isTimerModePickerPresented = true
+        selectedTimerModeOption = .countdown
+    }
+
+    func updateCountdownHoursText(_ text: String) {
+        countdownHoursText = sanitizeCountdownText(text, maximum: 99)
+    }
+
+    func updateCountdownMinutesText(_ text: String) {
+        countdownMinutesText = sanitizeCountdownText(text, maximum: 59)
+    }
+
+    func updateCountdownSecondsText(_ text: String) {
+        countdownSecondsText = sanitizeCountdownText(text, maximum: 59)
+    }
+
+    func confirmCountdownDurationSelection() {
+        guard canConfirmCountdownDurationSelection else { return }
+
+        // TODO: ligar configuracao e inicio real da sessao de estudo com countdown.
+        isCountdownDurationPickerPresented = false
+    }
+}
+
+private extension StudySessionViewModel {
+    var countdownDurationInSeconds: Int {
+        let hours = Int(countdownHoursText) ?? 0
+        let minutes = Int(countdownMinutesText) ?? 0
+        let seconds = Int(countdownSecondsText) ?? 0
+
+        return (hours * 3600) + (minutes * 60) + seconds
+    }
+
+    func resetCountdownDuration() {
+        countdownHoursText = "00"
+        countdownMinutesText = "05"
+        countdownSecondsText = "00"
+    }
+
+    func sanitizeCountdownText(_ text: String, maximum: Int) -> String {
+        let digits = text.filter(\.isNumber)
+        let truncatedDigits = String(digits.prefix(2))
+
+        guard !truncatedDigits.isEmpty else {
+            return ""
+        }
+
+        let value = min(Int(truncatedDigits) ?? 0, maximum)
+        return String(format: "%02d", value)
     }
 }

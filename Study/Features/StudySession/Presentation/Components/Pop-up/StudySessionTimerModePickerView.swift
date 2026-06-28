@@ -13,17 +13,11 @@ struct StudySessionTimerModePickerView: View {
     let onConfirm: () -> Void
     
     var body: some View {
-        
-        VStack(alignment: .leading, spacing: GlobalConfiguration.largePadding) {
-            Button(action: onBack) {
-                Image(systemName: "xmark")
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundStyle(AppColors.neutralBlack)
-                    .frame(maxWidth: 25, maxHeight: 25)
-            }
-            .buttonStyle(.studyStyle)
-            
+        StudySessionPickerContainerView(
+            canConfirm: canConfirm,
+            onBack: onBack,
+            onConfirm: onConfirm
+        ) {
             HStack {
                 ForEach(StudySessionViewModel.TimerModeOption.allCases, id: \.self) { option in
                     StudySessionTimerModeCardView(
@@ -34,34 +28,6 @@ struct StudySessionTimerModePickerView: View {
                     .padding(.horizontal)
                 }
             }
-            
-            Button(action: onConfirm) {
-                Text("Iniciar Estudos")
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(!canConfirm)
-            .padding(.horizontal, GlobalConfiguration.largePadding)
         }
-        .padding()
-        .aspectRatio(1, contentMode: .fit)
-        .background(AppColors.neutralWhite)
-        .overlay {
-            RoundedRectangle(cornerRadius: AppRadius.small)
-                .stroke(AppColors.neutralBlack, lineWidth: AppBorder.width)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.small))
-        .shadow(color: .black, radius: AppShadow.radius, y: AppShadow.y)
     }
-}
-
-#Preview {
-    StudySessionTimerModePickerView(
-        selectedOption: .countdown,
-        canConfirm: true,
-        onBack: {},
-        onSelect: { _ in },
-        onConfirm: {}
-    )
-    .padding(40)
-    .background(Color.gray.opacity(0.3))
 }
