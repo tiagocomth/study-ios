@@ -9,18 +9,24 @@ import Combine
 @MainActor
 final class StudySessionViewModel: ObservableObject {
     weak var coordinator: StudySessionCoordinatorProtocol?
-    private let worker: StudySessionWorkerProtocol
+    let worker: StudySessionWorkerProtocol
     private var hasStarted = false
-    private var categoryObservationTask: Task<Void, Never>?
+    var categoryObservationTask: Task<Void, Never>?
     private var activeSessionObservationTask: Task<Void, Never>?
     private var timerObservationTask: Task<Void, Never>?
 
-    @Published private(set) var viewState: StudySessionViewState = .loading
-    @Published private(set) var categories: [StudyCategory] = []
+    @Published var editingCategoryName: String = ""
+
+    @Published var viewState: StudySessionViewState = .loading
+    @Published var categories: [StudyCategory] = []
     @Published private(set) var activeSession: LocalStudySession?
     @Published private(set) var timerState: TimerViewState = .notStarted
-    @Published private(set) var errorMessage: String?
+    @Published var errorMessage: String?
+
     @Published var selectedCategoryId: UUID?
+    @Published var actionMenuCategoryId: UUID?
+    @Published var editingCategoryId: UUID?
+    @Published var categoryPendingDeletion: StudyCategory?
 
     init(worker: StudySessionWorkerProtocol) {
         self.worker = worker
@@ -44,42 +50,59 @@ final class StudySessionViewModel: ObservableObject {
         loadCategories()
     }
 
-    func selectCategory(_ categoryId: UUID) {
-        selectedCategoryId = categoryId
-    }
-
-    func didTapAddCategory() {
-        coordinator?.presentCreateCategory()
-    }
-
     func didTapPrimaryButton() {
         guard canStartTimer else { return }
         // TODO: apresentar fluxo de configuracao do timer e inicio da sessao.
     }
+}
 
-    func didSubmitEditCategory(id: UUID, name: String) -> String? {
-        let validatedName: String
+// MARK: - Observable
+extension StudySessionViewModel {
+    private func observeCategories() {
+        categoryObservationTask?.cancel()
+        categoryObservationTask = Task { [weak self] in
+            guard let self else { return }
 
-        do {
-            validatedName = try worker.validateCategoryName(name)
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
-            return nil
+            for await categories in worker.categoryChanges() {
+                handleCategoryUpdate(categories)
+            }
         }
-
-        // TODO: integrar edicao real da categoria.
-        _ = id
-        return validatedName
     }
+    
+    private func observeActiveStudySession() {
+        activeSessionObservationTask?.cancel()
+        activeSessionObservationTask = Task { [weak self] in
+            guard let self else { return }
 
-    func didConfirmDeleteCategory(id: UUID) {
-        // TODO: integrar exclusao real da categoria.
+            let sessionChanges = await worker.activeStudySessionChanges()
+            for await session in sessionChanges {
+                activeSession = session
+                syncSelectedCategory(with: session)
+            }
+        }
+    }
+    
+    private func observeTimer() {
+        timerObservationTask?.cancel()
+        timerObservationTask = Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                let timerChanges = try await worker.timerChanges()
+
+                for await timerState in timerChanges {
+                    self.timerState = makeTimerViewState(from: timerState)
+                }
+            } catch let error as StudySessionError where error == .studySessionTimerNotConfigured {
+                timerState = .notStarted
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 }
 
 extension StudySessionViewModel {
-    
     enum TimerViewState: Equatable {
         case notStarted
         case running(TimerSnapshot)
@@ -116,90 +139,7 @@ extension StudySessionViewModel {
 }
 
 private extension StudySessionViewModel {
-    func loadCategories() {
-        do {
-            let categories = try worker.loadCategories { [weak self] refreshedCategories in
-                self?.handleCategoryUpdate(refreshedCategories)
-            }
-            handleCategoryUpdate(categories)
-        } catch {
-            errorMessage = error.localizedDescription
-            viewState = .error
-        }
-    }
-
-    func observeCategories() {
-        categoryObservationTask?.cancel()
-        categoryObservationTask = Task { [weak self] in
-            guard let self else { return }
-
-            for await categories in worker.categoryChanges() {
-                handleCategoryUpdate(categories)
-            }
-        }
-    }
-
-    func observeActiveStudySession() {
-        activeSessionObservationTask?.cancel()
-        activeSessionObservationTask = Task { [weak self] in
-            guard let self else { return }
-
-            let sessionChanges = await worker.activeStudySessionChanges()
-            for await session in sessionChanges {
-                activeSession = session
-                syncSelectedCategory(with: session)
-            }
-        }
-    }
-
-    func observeTimer() {
-        timerObservationTask?.cancel()
-        timerObservationTask = Task { [weak self] in
-            guard let self else { return }
-
-            do {
-                let timerChanges = try await worker.timerChanges()
-
-                for await timerState in timerChanges {
-                    self.timerState = makeTimerViewState(from: timerState)
-                }
-            } catch let error as StudySessionError where error == .studySessionTimerNotConfigured {
-                timerState = .notStarted
-            } catch {
-                errorMessage = error.localizedDescription
-            }
-        }
-    }
-
-    func handleCategoryUpdate(_ categories: [StudyCategory]) {
-        self.categories = categories
-        errorMessage = nil
-
-        if let selectedCategoryId,
-           categories.contains(where: { $0.categoryId == selectedCategoryId }) == false {
-            self.selectedCategoryId = nil
-        }
-
-        syncSelectedCategory(with: activeSession)
-
-        if categories.isEmpty {
-            viewState = .empty
-        } else {
-            viewState = .content
-        }
-    }
-
-    func syncSelectedCategory(with session: LocalStudySession?) {
-        guard
-            let session,
-            categories.contains(where: { $0.categoryId == session.categoryId })
-        else {
-            return
-        }
-
-        selectedCategoryId = session.categoryId
-    }
-
+    
     func makeTimerViewState(from state: StudySessionTimerState) -> TimerViewState {
         let snapshot = TimerSnapshot(
             mode: state.mode,

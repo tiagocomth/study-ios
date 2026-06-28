@@ -8,10 +8,7 @@
 import SwiftUI
 
 struct StudySessionCategoryGridView: View {
-    let categories: [StudyCategory]
-    let selectedCategoryId: UUID?
-    let onSelectCategory: (UUID) -> Void
-    let onAddCategory: () -> Void
+    @ObservedObject var viewModel: StudySessionViewModel
 
     var body: some View {
         ScrollView {
@@ -20,13 +17,12 @@ struct StudySessionCategoryGridView: View {
                 alignment: .leading,
                 spacing: 50
             ) {
-                ForEach(categories, id: \.categoryId) { category in
-                    cardView(for: category, onSelect: onSelectCategory)
+                ForEach(viewModel.categories, id: \.categoryId) { category in
+                    cardView(for: category)
                 }
-
-                StudySessionAddCardView(action: onAddCategory)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 
+                StudySessionAddCardView(action: viewModel.didTapAddCategory)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
@@ -36,43 +32,23 @@ struct StudySessionCategoryGridView: View {
 }
 
 private extension StudySessionCategoryGridView {
-
-    func isSelected(_ category: StudyCategory) -> Bool {
-        selectedCategoryId == category.categoryId
-    }
-
-    @ViewBuilder
-    func cardView(for category: StudyCategory, onSelect: @escaping (UUID) -> Void) -> some View {
-        if isSelected(category) {
-            StudySessionSelectedCardView(categoryName: category.name)
-        } else {
-            StudySessionCardView(categoryName: category.name) {
-                onSelectCategory(category.categoryId)
-            }
-
+    func cardView(for category: StudyCategory) -> some View {
+        VStack {
+            StudySessionCategoryCardView(
+                isActionMenuPresented: Binding(
+                    get: { viewModel.isActionMenuPresented(for: category) },
+                    set: { viewModel.setActionMenuPresented($0, for: category) }
+                ),
+                editingName: $viewModel.editingCategoryName,
+                categoryName: category.name,
+                isSelected: viewModel.isSelected(category),
+                isEditing: viewModel.isEditing(category),
+                onSelect: { viewModel.selectCategory(category.categoryId) },
+                onEdit: { viewModel.beginEditing(category) },
+                onDelete: { viewModel.requestDeleteCategory(category) },
+                onSubmitEditing: { viewModel.commitEditing(for: category) }
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
-}
-
-#Preview {
-    
-    var categories = Array<StudyCategory>()
-
-    for _ in 0...10 {
-        let element = StudyCategory(
-            categoryId: UUID(),
-            userId: UUID(),
-            name: "Português",
-            createdAt: "19.10.234"
-        )
-        categories.append(element)
-    }
-    
-    return StudySessionCategoryGridView(
-        categories: categories,
-        selectedCategoryId: nil,
-        onSelectCategory: { _ in
-        },
-        onAddCategory: {}
-    )
 }

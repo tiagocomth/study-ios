@@ -20,6 +20,15 @@ struct StudySessionView: View {
         }
         .padding(GlobalConfiguration.normalPadding)
         .background(AppColors.neutralWhite.ignoresSafeArea())
+        .onTapGesture {
+            viewModel.dismissDeleteCategory()
+            viewModel.dismissEdit()
+        }
+        .overlay {
+            if let categoryPendingDeletion = viewModel.categoryPendingDeletion {
+                deleteConfirmationOverlay(for: categoryPendingDeletion)
+            }
+        }
         .task {
             viewModel.onViewAppear()
         }
@@ -36,5 +45,25 @@ private extension StudySessionView {
         .disabled(!viewModel.canStartTimer)
         .frame(maxWidth: 320)
         .frame(maxWidth: .infinity)
+    }
+
+    func deleteConfirmationOverlay(for _: StudyCategory) -> some View {
+        ZStack {
+            Color.black.opacity(0.18)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    viewModel.dismissDeleteCategory()
+                }
+
+            StudySessionDeleteConfirmationView(
+                title: "Deseja Excluir sua matéria?",
+                onCancel: {
+                    viewModel.dismissDeleteCategory()
+                },
+                onConfirmDelete: {
+                    viewModel.confirmDeletePendingCategory()
+                }
+            )
+        }
     }
 }

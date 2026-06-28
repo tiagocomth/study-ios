@@ -2,7 +2,7 @@
 //  StudySessionDeleteConfirmationView.swift
 //  Study
 //
-//  Created by Codex on 28/06/26.
+//  Created by Caio Mandarino on 28/06/26.
 //
 
 import SwiftUI

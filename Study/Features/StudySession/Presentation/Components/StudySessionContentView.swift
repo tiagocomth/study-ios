@@ -17,12 +17,7 @@ struct StudySessionContentView: View {
         case .empty:
             StudySessionEmptyView(onAddCategory: viewModel.didTapAddCategory)
         case .content:
-            StudySessionCategoryGridView(
-                categories: viewModel.categories,
-                selectedCategoryId: viewModel.selectedCategoryId,
-                onSelectCategory: viewModel.selectCategory,
-                onAddCategory: viewModel.didTapAddCategory
-            )
+            StudySessionCategoryGridView(viewModel: viewModel)
         case .error:
             StudySessionErrorView(errorMessage: viewModel.errorMessage)
         }
