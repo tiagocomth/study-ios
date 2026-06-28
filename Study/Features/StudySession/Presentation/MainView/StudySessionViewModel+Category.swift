@@ -73,7 +73,6 @@ extension StudySessionViewModel {
         do {
             _ = try worker.updateCategory(id: category.categoryId, dto: UpdateCategoryDTO(name: validatedName))
         } catch {
-            categories[index] = category
             errorMessage = error.localizedDescription
         }
     }
@@ -150,7 +149,6 @@ extension StudySessionViewModel {
         do {
             try worker.deleteCategory(id: id)
         } catch {
-            categories = previousCategories
             errorMessage = error.localizedDescription
         }
     }
