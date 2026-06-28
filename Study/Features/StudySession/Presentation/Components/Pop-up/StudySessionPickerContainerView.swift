@@ -6,7 +6,6 @@
 import SwiftUI
 
 struct StudySessionPickerContainerView<Content: View>: View {
-    let spacing: CGFloat
     let buttonTitle: String
     let canConfirm: Bool
     let onBack: () -> Void
@@ -14,14 +13,12 @@ struct StudySessionPickerContainerView<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     init(
-        spacing: CGFloat = GlobalConfiguration.largeSpacing,
         buttonTitle: String = "Iniciar Estudos",
         canConfirm: Bool,
         onBack: @escaping () -> Void,
         onConfirm: @escaping () -> Void,
         @ViewBuilder content: @escaping () -> Content
     ) {
-        self.spacing = spacing
         self.buttonTitle = buttonTitle
         self.canConfirm = canConfirm
         self.onBack = onBack
@@ -30,7 +27,7 @@ struct StudySessionPickerContainerView<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: spacing) {
+        VStack(alignment: .leading, spacing: .zero) {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
                     .resizable()
@@ -47,9 +44,9 @@ struct StudySessionPickerContainerView<Content: View>: View {
             
             Button(action: onConfirm) {
                 Text(buttonTitle)
-                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(PrimaryButtonStyle())
+            .frame(maxWidth: 300)
             .disabled(!canConfirm)
             .padding(.vertical)
             .frame(maxWidth: .infinity)

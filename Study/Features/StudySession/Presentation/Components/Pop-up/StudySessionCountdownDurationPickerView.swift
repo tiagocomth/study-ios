@@ -18,7 +18,6 @@ struct StudySessionCountdownDurationPickerView: View {
 
     var body: some View {
         StudySessionPickerContainerView(
-            spacing: GlobalConfiguration.normalPadding,
             canConfirm: canConfirm,
             onBack: onBack,
             onConfirm: onConfirm

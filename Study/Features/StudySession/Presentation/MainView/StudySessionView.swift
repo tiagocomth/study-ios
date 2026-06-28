@@ -24,6 +24,7 @@ struct StudySessionView: View {
         .onTapGesture {
             viewModel.dismissDeleteCategory()
             viewModel.dismissEdit()
+            viewModel.dismissTimerOverlays()
         }
         .overlay {
             if viewModel.isCountdownDurationPickerPresented {
