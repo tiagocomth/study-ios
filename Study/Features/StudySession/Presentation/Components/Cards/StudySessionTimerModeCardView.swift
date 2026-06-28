@@ -6,7 +6,7 @@
 import SwiftUI
 
 struct StudySessionTimerModeCardView: View {
-    let option: StudySessionViewModel.TimerModeOption
+    let option: TimerModeOption
     let isSelected: Bool
     let action: () -> Void
 

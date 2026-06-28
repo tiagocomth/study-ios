@@ -6,10 +6,10 @@
 import SwiftUI
 
 struct StudySessionTimerModePickerView: View {
-    let selectedOption: StudySessionViewModel.TimerModeOption?
+    let selectedOption: TimerModeOption?
     let canConfirm: Bool
     let onBack: () -> Void
-    let onSelect: (StudySessionViewModel.TimerModeOption) -> Void
+    let onSelect: (TimerModeOption) -> Void
     let onConfirm: () -> Void
     
     var body: some View {
@@ -19,7 +19,7 @@ struct StudySessionTimerModePickerView: View {
             onConfirm: onConfirm
         ) {
             HStack {
-                ForEach(StudySessionViewModel.TimerModeOption.allCases, id: \.self) { option in
+                ForEach(TimerModeOption.allCases, id: \.self) { option in
                     StudySessionTimerModeCardView(
                         option: option,
                         isSelected: selectedOption == option,
