@@ -42,11 +42,7 @@ struct StudyApp: App {
 
 extension StudyApp {
     static func makeContainer() -> ModelContainer {
-        do {
-            return try ModelContainer(for: StoredStudyCategory.self)
-        } catch {
-            fatalError("Failed to create model container: \(error)")
-        }
+        StudyModelContainerProvider.shared
     }
 }
 

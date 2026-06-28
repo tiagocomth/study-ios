@@ -138,7 +138,6 @@ extension StudySessionViewModel {
     }
 
     func didConfirmDeleteCategory(id: UUID) {
-        let previousCategories = categories
 
         categories.removeAll { $0.categoryId == id }
 

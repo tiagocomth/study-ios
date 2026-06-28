@@ -57,8 +57,10 @@ final class AppWorker {
         }
 
         self.appCoordinator = AppCoordinator()
-        configurePayments()
-        configureStudySessionSync()
+        if !AppRuntime.isRunningTests {
+            configurePayments()
+            configureStudySessionSync()
+        }
     }
 
     func makeAuthCoordinator() -> AuthCoordinator {

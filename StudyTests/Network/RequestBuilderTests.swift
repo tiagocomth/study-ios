@@ -20,10 +20,10 @@ struct RequestBuilderTests {
         #expect(request.timeoutInterval == 30)
     }
 
-    @Test("sets JSON content-type and accept headers")
+    @Test("sets the default accept header and leaves content-type unset for plain requests")
     func setsDefaultHeaders() throws {
         let request = try #require(RequestBuilder.build(TestEndpoint()))
-        #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
+        #expect(request.value(forHTTPHeaderField: "Content-Type") == nil)
         #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")
     }
 
