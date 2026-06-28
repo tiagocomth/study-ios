@@ -93,6 +93,11 @@ final class StudySessionFactory {
         return StudySessionView(viewModel: viewModel)
     }
 
+    func makeCategoryFormView() -> some View {
+        let viewModel = makeCategoryFormViewModel()
+        return StudySessionCategoryFormView(viewModel: viewModel)
+    }
+
     func restoreLocalState() async {
         guard let userId = userSession.currentUserId else { return }
 
@@ -142,6 +147,12 @@ final class StudySessionFactory {
 private extension StudySessionFactory {
     func makeStudySessionViewModel() -> StudySessionViewModel {
         let viewModel = StudySessionViewModel(worker: makeStudySessionWorker())
+        viewModel.coordinator = coordinator
+        return viewModel
+    }
+
+    func makeCategoryFormViewModel() -> StudySessionCategoryFormViewModel {
+        let viewModel = StudySessionCategoryFormViewModel(worker: makeStudySessionWorker())
         viewModel.coordinator = coordinator
         return viewModel
     }

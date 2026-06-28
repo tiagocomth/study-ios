@@ -28,6 +28,7 @@ struct StudySessionCardView: View {
             
             Text(categoryName)
                 .fontWeight(.semibold)
+                .foregroundStyle(AppColors.neutralBlack)
         }
         
     }

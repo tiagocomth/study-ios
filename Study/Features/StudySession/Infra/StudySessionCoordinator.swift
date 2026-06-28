@@ -5,10 +5,18 @@
 
 import SwiftUI
 
+protocol StudySessionCoordinatorProtocol: AnyObject {
+    func presentCreateCategory()
+}
+
+protocol StudySessionCategoryFormCoordinatorProtocol: AnyObject {
+    func dismissCreateCategory()
+}
+
 enum StudySessionRouter: Hashable, Identifiable {
     var id: Self { self }
     
-    case none
+    case createCategory
 }
 
 final class StudySessionCoordinator: Coordinator {
@@ -26,7 +34,20 @@ final class StudySessionCoordinator: Coordinator {
 
     func coordinate(to route: StudySessionRouter) -> some View {
         switch route {
-        case .none: EmptyView()
+        case .createCategory:
+            factory.makeCategoryFormView()
         }
+    }
+}
+
+extension StudySessionCoordinator: StudySessionCoordinatorProtocol {
+    func presentCreateCategory() {
+        navigationController.presentSheet(router: StudySessionRouter.createCategory)
+    }
+}
+
+extension StudySessionCoordinator: StudySessionCategoryFormCoordinatorProtocol {
+    func dismissCreateCategory() {
+        navigationController.dismissSheet()
     }
 }

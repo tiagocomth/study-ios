@@ -8,7 +8,7 @@ import Combine
 
 @MainActor
 final class StudySessionViewModel: ObservableObject {
-    weak var coordinator: StudySessionCoordinator?
+    weak var coordinator: StudySessionCoordinatorProtocol?
     private let worker: StudySessionWorkerProtocol
     private var hasStarted = false
     private var categoryObservationTask: Task<Void, Never>?
@@ -49,7 +49,7 @@ final class StudySessionViewModel: ObservableObject {
     }
 
     func didTapAddCategory() {
-        // TODO: apresentar fluxo de criacao/edicao da categoria.
+        coordinator?.presentCreateCategory()
     }
 
     func didTapPrimaryButton() {
