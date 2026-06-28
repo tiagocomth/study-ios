@@ -30,7 +30,7 @@ final class StudySessionCategoryFormViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            _ = try worker.createCategory(CreateCategoryDTO(name: trimmedCategoryName))
+            _ = try worker.createCategory(CreateCategoryDTO(categoryId: .init(), name: trimmedCategoryName))
             coordinator?.dismissCreateCategory()
         } catch {
             errorMessage = error.localizedDescription

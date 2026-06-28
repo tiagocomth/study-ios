@@ -11,7 +11,6 @@ final class CategoryManager: CategoryManagerProtocol {
     private let categoryLocal: CategoryStoreLocalProtocol
     private let operationManager: OperationManagerProtocol
     private let currentUserId: () -> UUID?
-    private let makeId: @Sendable () -> UUID
     private let now: @Sendable () -> Date
     
     init(
@@ -19,14 +18,12 @@ final class CategoryManager: CategoryManagerProtocol {
         categoryLocal: CategoryStoreLocalProtocol,
         operationManager: OperationManagerProtocol,
         currentUserId: @escaping () -> UUID?,
-        makeId: @escaping @Sendable () -> UUID = { UUID() },
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.categoryAPI = categoryAPI
         self.categoryLocal = categoryLocal
         self.operationManager = operationManager
         self.currentUserId = currentUserId
-        self.makeId = makeId
         self.now = now
     }
 
@@ -64,7 +61,7 @@ final class CategoryManager: CategoryManagerProtocol {
         }
         
         let localCategory = StudyCategory(
-            categoryId: makeId(),
+            categoryId: dto.categoryId,
             userId: userId,
             name: dto.name,
             createdAt: ISO8601DateFormatter().string(from: now())

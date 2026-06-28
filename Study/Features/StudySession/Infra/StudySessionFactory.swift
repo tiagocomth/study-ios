@@ -67,7 +67,6 @@ final class StudySessionFactory {
             categoryLocal: categoryLocal,
             operationManager: operationManager,
             currentUserId: currentUserId,
-            makeId: makeId,
             now: now
         )
         let studySessionManager = StudySessionManager(
