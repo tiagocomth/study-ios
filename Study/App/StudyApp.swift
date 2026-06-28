@@ -4,12 +4,18 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct StudyApp: App {
 
     @Environment(\.scenePhase) private var scenePhase
-    @State var appWorker = AppWorker()
+    @State private var appWorker: AppWorker
+
+    init() {
+        let modelContainer = StudyApp.makeContainer()
+        _appWorker = State(initialValue: AppWorker(modelContainer: modelContainer))
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -20,6 +26,26 @@ struct StudyApp: App {
                 .onChange(of: scenePhase) { _, newScenePhase in
                     appWorker.updateLifecycleState(AppLifecycleState(newScenePhase))
                 }
+                .modelContainer(appWorker.modelContainer)
+                .frame(
+                    minWidth: GlobalConfiguration.minimumWindowWidth,
+                    minHeight: GlobalConfiguration.minimumWindowHeight
+                )
+        }
+        .defaultSize(
+            width: GlobalConfiguration.defaultWindowWidth,
+            height: GlobalConfiguration.defaultWindowHeight
+        )
+        .windowResizability(.contentMinSize)
+    }
+}
+
+extension StudyApp {
+    static func makeContainer() -> ModelContainer {
+        do {
+            return try ModelContainer(for: StoredStudyCategory.self)
+        } catch {
+            fatalError("Failed to create model container: \(error)")
         }
     }
 }
@@ -38,7 +64,7 @@ private struct RootView: View {
     var body: some View {
         Group {
             if session.isLoggedIn {
-                MainView(session: session)
+                CoordinateView(coordinator: appWorker.makeStudySessionCoordinator())
             } else {
                 CoordinateView(coordinator: appWorker.makeAuthCoordinator())
                     

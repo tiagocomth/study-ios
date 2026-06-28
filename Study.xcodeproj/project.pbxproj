@@ -32,7 +32,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Config/Info.plist,
-				Core/Extensions/.gitkeep,
 				"Core/Services/Payment/Study App.storekit",
 			);
 			target = A54FB3742FE0F59100A13CE1 /* Study */;

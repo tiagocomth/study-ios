@@ -27,6 +27,7 @@ final class StudySessionFactory {
     init(
         apiClient: APIClientProtocol,
         userSession: UserSessionService,
+        modelContainer: ModelContainer,
         now: @escaping @Sendable () -> Date = { Date() },
         makeId: @escaping @Sendable () -> UUID = { UUID() }
     ) {
@@ -35,7 +36,6 @@ final class StudySessionFactory {
         self.makeId = makeId
 
         let currentUserId = { userSession.currentUserId }
-        let modelContainer = Self.makeModelContainer()
         let categoryAPI = CategoryAPI(apiClient: apiClient)
         let studySessionAPI = StudySessionAPI(apiClient: apiClient)
         let categoryLocal = CategoryStoreLocal(context: modelContainer.mainContext)
@@ -140,14 +140,6 @@ final class StudySessionFactory {
 }
 
 private extension StudySessionFactory {
-    static func makeModelContainer() -> ModelContainer {
-        do {
-            return try ModelContainer(for: StoredStudyCategory.self)
-        } catch {
-            fatalError("Failed to create model container: \(error)")
-        }
-    }
-
     func makeStudySessionViewModel() -> StudySessionViewModel {
         let viewModel = StudySessionViewModel(worker: makeStudySessionWorker())
         viewModel.coordinator = coordinator

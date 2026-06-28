@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 
 @MainActor
 final class AppWorker {
@@ -17,6 +18,7 @@ final class AppWorker {
     /// factories/services (instead of each one creating its own).
     let apiClient: APIClientProtocol
     let paymentService: PaymentProtocol
+    let modelContainer: ModelContainer
 
     private let appCoordinator: AppCoordinator
     private let paymentLogger: DomainLogging
@@ -25,10 +27,11 @@ final class AppWorker {
     private let studySessionFactory: StudySessionFactory
     private var appTasks: [Task<Void, Never>]
 
-    init() {
+    init(modelContainer: ModelContainer) {
         let session = UserSessionService()
         session.restore()
         self.userSessionService = session
+        self.modelContainer = modelContainer
         self.paymentLogger = PaymentLogger()
         self.paymentService = StoreKitPaymentService(logger: paymentLogger)
 
@@ -37,7 +40,11 @@ final class AppWorker {
         self.apiClient = APIClient(
             tokenProvider: TokenProvider { session.token }
         )
-        self.studySessionFactory = StudySessionFactory(apiClient: apiClient, userSession: session)
+        self.studySessionFactory = StudySessionFactory(
+            apiClient: apiClient,
+            userSession: session,
+            modelContainer: modelContainer
+        )
         
         self.connectivityMonitorService = ConnectivityMonitorService()
         self.appLifecycleService = AppLifecycleService()
