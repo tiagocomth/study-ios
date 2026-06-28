@@ -88,6 +88,7 @@ private struct StudySessionCategoryFormPreviewWorker: StudySessionWorkerProtocol
     func activeStudySessionChanges() async -> AsyncStream<LocalStudySession?> { AsyncStream { _ in } }
     func configureTimer(_ mode: StudySessionTimerMode) async throws {}
     func timerChanges() async throws -> AsyncStream<StudySessionTimerState> { AsyncStream { _ in } }
+    func validateCategoryName(_ name: String) throws -> String { name }
     func createCategory(_ dto: CreateCategoryDTO, onShouldRollback: @escaping ShouldRollback) throws -> StudyCategory {
         StudyCategory(categoryId: UUID(), userId: UUID(), name: dto.name, createdAt: "")
     }

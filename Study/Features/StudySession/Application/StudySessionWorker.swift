@@ -55,6 +55,16 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
         return timerService.timerStates(mode: mode, sessionChanges: sessionChanges)
     }
 
+    func validateCategoryName(_ name: String) throws -> String {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedName.isEmpty else {
+            throw StudySessionError.invalidCategoryName
+        }
+
+        return trimmedName
+    }
+
     func loadCategories(onBackendRefresh: @escaping CategoriesRefreshCallback) throws -> [StudyCategory] {
         try categoryManager.loadCategories(onBackendRefresh: onBackendRefresh)
     }

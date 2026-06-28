@@ -14,6 +14,7 @@ protocol StudySessionWorkerProtocol {
     func activeStudySessionChanges() async -> AsyncStream<LocalStudySession?>
     func configureTimer(_ mode: StudySessionTimerMode) async throws
     func timerChanges() async throws -> AsyncStream<StudySessionTimerState>
+    func validateCategoryName(_ name: String) throws -> String
     
     func createCategory(
         _ dto: CreateCategoryDTO,

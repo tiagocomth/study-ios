@@ -56,6 +56,26 @@ final class StudySessionViewModel: ObservableObject {
         guard canStartTimer else { return }
         // TODO: apresentar fluxo de configuracao do timer e inicio da sessao.
     }
+
+    func didSubmitEditCategory(id: UUID, name: String) -> String? {
+        let validatedName: String
+
+        do {
+            validatedName = try worker.validateCategoryName(name)
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
+        }
+
+        // TODO: integrar edicao real da categoria.
+        _ = id
+        return validatedName
+    }
+
+    func didConfirmDeleteCategory(id: UUID) {
+        // TODO: integrar exclusao real da categoria.
+    }
 }
 
 extension StudySessionViewModel {
