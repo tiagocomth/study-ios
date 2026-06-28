@@ -118,7 +118,7 @@ private extension AppWorker {
         let paymentService = paymentService
         
         let appLifeCycleTask = Task { [weak self] in
-            for await state in stateChanges.dropFirst() {
+            for await state in stateChanges {
                 guard state == .active else { continue }
                 await paymentService.refreshEntitlements()
                 await self?.studySessionFactory.expireSessionIfNeeded()

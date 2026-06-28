@@ -69,26 +69,16 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
         try categoryManager.loadCategories(onBackendRefresh: onBackendRefresh)
     }
 
-    func createCategory(
-        _ dto: CreateCategoryDTO,
-        onShouldRollback: @escaping ShouldRollback
-    ) throws -> StudyCategory {
-        try categoryManager.create(dto, onShouldRollback: onShouldRollback)
+    func createCategory(_ dto: CreateCategoryDTO) throws -> StudyCategory {
+        try categoryManager.create(dto)
     }
 
-    func updateCategory(
-        id: UUID,
-        dto: UpdateCategoryDTO,
-        onShouldRollback: @escaping ShouldRollback
-    ) throws -> StudyCategory {
-        try categoryManager.update(id: id, dto: dto, onShouldRollback: onShouldRollback)
+    func updateCategory(id: UUID, dto: UpdateCategoryDTO) throws -> StudyCategory {
+        try categoryManager.update(id: id, dto: dto)
     }
 
-    func deleteCategory(
-        id: UUID,
-        onShouldRollback: @escaping ShouldRollback
-    ) throws {
-        try categoryManager.delete(id: id, onShouldRollback: onShouldRollback)
+    func deleteCategory(id: UUID) throws {
+        try categoryManager.delete(id: id)
     }
 
     func getActiveStudySession() async -> LocalStudySession? {

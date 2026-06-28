@@ -6,7 +6,6 @@
 import Foundation
 
 typealias CategoriesRefreshCallback = @MainActor @Sendable ([StudyCategory]) -> Void
-typealias ShouldRollback = @MainActor @Sendable (Error) -> Void
 
 @MainActor
 protocol StudySessionWorkerProtocol {
@@ -16,21 +15,11 @@ protocol StudySessionWorkerProtocol {
     func timerChanges() async throws -> AsyncStream<StudySessionTimerState>
     func validateCategoryName(_ name: String) throws -> String
     
-    func createCategory(
-        _ dto: CreateCategoryDTO,
-        onShouldRollback: @escaping ShouldRollback
-    ) throws -> StudyCategory
+    func createCategory(_ dto: CreateCategoryDTO) throws -> StudyCategory
     
-    func updateCategory(
-        id: UUID,
-        dto: UpdateCategoryDTO,
-        onShouldRollback: @escaping ShouldRollback
-    ) throws -> StudyCategory
+    func updateCategory(id: UUID, dto: UpdateCategoryDTO) throws -> StudyCategory
     
-    func deleteCategory(
-        id: UUID,
-        onShouldRollback: @escaping ShouldRollback
-    ) throws
+    func deleteCategory(id: UUID) throws
     
     func loadCategories(onBackendRefresh: @escaping CategoriesRefreshCallback) throws -> [StudyCategory]
     func getActiveStudySession() async -> LocalStudySession?

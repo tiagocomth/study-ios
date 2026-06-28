@@ -89,13 +89,13 @@ private struct StudySessionCategoryFormPreviewWorker: StudySessionWorkerProtocol
     func configureTimer(_ mode: StudySessionTimerMode) async throws {}
     func timerChanges() async throws -> AsyncStream<StudySessionTimerState> { AsyncStream { _ in } }
     func validateCategoryName(_ name: String) throws -> String { name }
-    func createCategory(_ dto: CreateCategoryDTO, onShouldRollback: @escaping ShouldRollback) throws -> StudyCategory {
+    func createCategory(_ dto: CreateCategoryDTO) throws -> StudyCategory {
         StudyCategory(categoryId: UUID(), userId: UUID(), name: dto.name, createdAt: "")
     }
-    func updateCategory(id: UUID, dto: UpdateCategoryDTO, onShouldRollback: @escaping ShouldRollback) throws -> StudyCategory {
+    func updateCategory(id: UUID, dto: UpdateCategoryDTO) throws -> StudyCategory {
         StudyCategory(categoryId: id, userId: UUID(), name: dto.name, createdAt: "")
     }
-    func deleteCategory(id: UUID, onShouldRollback: @escaping ShouldRollback) throws {}
+    func deleteCategory(id: UUID) throws {}
     func loadCategories(onBackendRefresh: @escaping CategoriesRefreshCallback) throws -> [StudyCategory] { [] }
     func getActiveStudySession() async -> LocalStudySession? { nil }
     func startStudySession(categoryId: UUID) async throws {}

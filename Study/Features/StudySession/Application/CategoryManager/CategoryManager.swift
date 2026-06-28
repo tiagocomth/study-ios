@@ -58,10 +58,7 @@ final class CategoryManager: CategoryManagerProtocol {
         return localCategories
     }
     
-    func create(
-        _ dto: CreateCategoryDTO,
-        onShouldRollback: @escaping ShouldRollback
-    ) throws -> StudyCategory {
+    func create(_ dto: CreateCategoryDTO) throws -> StudyCategory {
         guard let userId = currentUserId() else {
             throw CategoryManagerError.missingCurrentUser
         }
@@ -80,19 +77,14 @@ final class CategoryManager: CategoryManagerProtocol {
             await processCreateInBackground(
                 dto,
                 userId: userId,
-                categoryId: localCategory.categoryId,
-                onShouldRollback: onShouldRollback
+                categoryId: localCategory.categoryId
             )
         }
         
         return localCategory
     }
     
-    func update(
-        id: UUID,
-        dto: UpdateCategoryDTO,
-        onShouldRollback: @escaping ShouldRollback
-    ) throws -> StudyCategory {
+    func update(id: UUID, dto: UpdateCategoryDTO) throws -> StudyCategory {
         guard let userId = currentUserId() else {
             throw CategoryManagerError.missingCurrentUser
         }
@@ -117,17 +109,13 @@ final class CategoryManager: CategoryManagerProtocol {
                 dto: dto,
                 userId: userId,
                 previousCategory: previousCategory,
-                onShouldRollback: onShouldRollback
             )
         }
         
         return localCategory
     }
     
-    func delete(
-        id: UUID,
-        onShouldRollback: @escaping ShouldRollback
-    ) throws {
+    func delete(id: UUID) throws {
         guard let userId = currentUserId() else {
             throw CategoryManagerError.missingCurrentUser
         }
@@ -143,8 +131,7 @@ final class CategoryManager: CategoryManagerProtocol {
             await processDeleteInBackground(
                 id: id,
                 userId: userId,
-                deletedCategory: deletedCategory,
-                onShouldRollback: onShouldRollback
+                deletedCategory: deletedCategory
             )
         }
     }
@@ -169,8 +156,7 @@ private extension CategoryManager {
     func processCreateInBackground(
         _ dto: CreateCategoryDTO,
         userId: UUID,
-        categoryId: UUID,
-        onShouldRollback: @escaping ShouldRollback
+        categoryId: UUID
     ) async {
         let result = await operationManager.dispatch(.createCategory(dto), userId: userId) { () throws(NetworkError) -> Void in
             try await categoryAPI.create(dto)
@@ -178,8 +164,7 @@ private extension CategoryManager {
 
         await handleDispatchResult(
             result,
-            rollback: { try categoryLocal.rollbackCreate(id: categoryId, userId: userId) },
-            onShouldRollback: onShouldRollback
+            rollback: { try categoryLocal.rollbackCreate(id: categoryId, userId: userId) }
         )
     }
 
@@ -187,8 +172,7 @@ private extension CategoryManager {
         id: UUID,
         dto: UpdateCategoryDTO,
         userId: UUID,
-        previousCategory: StudyCategory,
-        onShouldRollback: @escaping ShouldRollback
+        previousCategory: StudyCategory
     ) async {
         let result = await operationManager.dispatch(.updateCategory(id: id, dto: dto), userId: userId) { () throws(NetworkError) -> Void in
             try await categoryAPI.update(id: id, dto: dto)
@@ -196,16 +180,14 @@ private extension CategoryManager {
 
         await handleDispatchResult(
             result,
-            rollback: { try categoryLocal.rollbackUpdate(previousCategory: previousCategory) },
-            onShouldRollback: onShouldRollback
+            rollback: { try categoryLocal.rollbackUpdate(previousCategory: previousCategory) }
         )
     }
 
     func processDeleteInBackground(
         id: UUID,
         userId: UUID,
-        deletedCategory: StudyCategory,
-        onShouldRollback: @escaping ShouldRollback
+        deletedCategory: StudyCategory
     ) async {
         let result = await operationManager.dispatch(.deleteCategory(id), userId: userId) { () throws(NetworkError) -> Void in
             try await categoryAPI.delete(id: id)
@@ -213,19 +195,16 @@ private extension CategoryManager {
 
         await handleDispatchResult(
             result,
-            rollback: { try categoryLocal.rollbackDelete(deletedCategory: deletedCategory) },
-            onShouldRollback: onShouldRollback
+            rollback: { try categoryLocal.rollbackDelete(deletedCategory: deletedCategory) }
         )
     }
 
     func handleDispatchResult(
         _ result: OperationDispatchResult,
-        rollback: () throws -> Void,
-        onShouldRollback: @escaping ShouldRollback
+        rollback: () throws -> Void
     ) async {
-        guard case .failed(let error) = result else { return }
+        guard case .failed = result else { return }
 
         try? rollback()
-        onShouldRollback(error)
     }
 }
