@@ -43,22 +43,18 @@ final class OperationManager: OperationManagerProtocol {
                 if OfflineRetryPolicy.shouldEnqueue(error) {
                     try await enqueue(kind, userId: userId)
                     return .enqueued
+                } else {
+                    return .failed(error)
                 }
-            } catch {}
-
-            return .failed(error)
+            } catch {
+                return .rollback
+            }
         }
     }
 
     func enqueue(_ kind: PendingOfflineOperationKind, userId: UUID) async throws {
         await offlineOperationQueue.ensureRestored(userId: userId)
         try await offlineOperationQueue.enqueue(makeOperation(kind), userId: userId)
-    }
-
-    func enqueue(_ kinds: [PendingOfflineOperationKind], userId: UUID) async throws {
-        await offlineOperationQueue.ensureRestored(userId: userId)
-        let operations = kinds.map(makeOperation)
-        try await offlineOperationQueue.enqueue(operations, userId: userId)
     }
 }
 

@@ -146,6 +146,8 @@ private extension StudySessionManager {
             }
         case .enqueued:
             try? await operationManager.enqueue(finishKind, userId: userId)
+        case .rollback:
+            return
         case .failed:
             return
         }

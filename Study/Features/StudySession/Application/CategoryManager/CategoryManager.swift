@@ -203,7 +203,7 @@ private extension CategoryManager {
         _ result: OperationDispatchResult,
         rollback: () throws -> Void
     ) async {
-        guard case .failed = result else { return }
+        guard case .rollback = result else { return }
 
         try? rollback()
     }

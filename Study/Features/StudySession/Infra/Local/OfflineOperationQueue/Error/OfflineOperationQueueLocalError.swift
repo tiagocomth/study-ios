@@ -9,6 +9,7 @@ nonisolated enum OfflineOperationQueueLocalError: LocalizedError, Equatable, Sen
     case queueIsEmpty
     case operationIsNotFirst
     case failedToPersistOperations
+    case notFound
 
     var errorDescription: String? {
         switch self {
@@ -18,6 +19,8 @@ nonisolated enum OfflineOperationQueueLocalError: LocalizedError, Equatable, Sen
             return "Only the first pending offline operation can be updated."
         case .failedToPersistOperations:
             return "Failed to persist pending offline operations."
+        case .notFound:
+            return "The pending offline operation was not found."
         }
     }
 }
