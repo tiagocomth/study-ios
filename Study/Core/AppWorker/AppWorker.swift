@@ -107,7 +107,7 @@ private extension AppWorker {
 
         let connectivityChanges = connectivityMonitorService.connectivityChanges
         let connectivityTask = Task { [weak self] in
-            for await isConnected in connectivityChanges {
+            for await isConnected in connectivityChanges.dropFirst() {
                 guard isConnected else { continue }
                 await self?.studySessionFactory.expireSessionIfNeeded()
                 await self?.studySessionFactory.syncPendingOperations()
@@ -118,7 +118,7 @@ private extension AppWorker {
         let paymentService = paymentService
         
         let appLifeCycleTask = Task { [weak self] in
-            for await state in stateChanges {
+            for await state in stateChanges.dropFirst() {
                 guard state == .active else { continue }
                 await paymentService.refreshEntitlements()
                 await self?.studySessionFactory.expireSessionIfNeeded()
