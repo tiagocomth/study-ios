@@ -55,7 +55,9 @@ extension StudySessionViewModel {
             return
         }
 
-        guard let index = self.categories.firstIndex(where: { $0.categoryId == category.categoryId }) else {
+        guard validatedName != category.name else { return }
+
+        guard let index = categories.firstIndex(where: { $0.categoryId == category.categoryId }) else {
             return
         }
         
@@ -67,7 +69,13 @@ extension StudySessionViewModel {
         )
         
         categories[index] = updatedCategory
-        //TODO: Request
+
+        do {
+            _ = try worker.updateCategory(id: category.categoryId, dto: UpdateCategoryDTO(name: validatedName))
+        } catch {
+            categories[index] = category
+            errorMessage = error.localizedDescription
+        }
     }
 
     func requestDeleteCategory(_ category: StudyCategory) {
@@ -131,7 +139,20 @@ extension StudySessionViewModel {
     }
 
     func didConfirmDeleteCategory(id: UUID) {
-        // TODO: integrar exclusao real da categoria.
+        let previousCategories = categories
+
+        categories.removeAll { $0.categoryId == id }
+
+        if selectedCategoryId == id {
+            selectedCategoryId = nil
+        }
+
+        do {
+            try worker.deleteCategory(id: id)
+        } catch {
+            categories = previousCategories
+            errorMessage = error.localizedDescription
+        }
     }
 
     func handleCategoryUpdate(_ categories: [StudyCategory]) {
