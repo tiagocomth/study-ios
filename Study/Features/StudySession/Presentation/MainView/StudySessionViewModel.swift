@@ -27,6 +27,8 @@ final class StudySessionViewModel: ObservableObject {
     @Published var actionMenuCategoryId: UUID?
     @Published var editingCategoryId: UUID?
     @Published var categoryPendingDeletion: StudyCategory?
+    @Published var isTimerModePickerPresented = false
+    @Published var selectedTimerModeOption: TimerModeOption?
 
     init(worker: StudySessionWorkerProtocol) {
         self.worker = worker
@@ -52,7 +54,19 @@ final class StudySessionViewModel: ObservableObject {
 
     func didTapPrimaryButton() {
         guard canStartTimer else { return }
-        // TODO: apresentar fluxo de configuracao do timer e inicio da sessao.
+
+        switch timerState {
+        case .notStarted, .finished:
+            selectedTimerModeOption = nil
+            isTimerModePickerPresented = true
+        case .running, .paused:
+            // TODO: conectar acoes do footer ao fluxo de sessao em andamento.
+            return
+        }
+    }
+    
+    func shouldDisableClick() -> Bool {
+        categoryPendingDeletion != nil || isTimerModePickerPresented
     }
 }
 
@@ -103,6 +117,38 @@ extension StudySessionViewModel {
 }
 
 extension StudySessionViewModel {
+    enum TimerModeOption: CaseIterable, Equatable {
+        case stopwatch
+        case countdown
+
+        var title: String {
+            switch self {
+            case .stopwatch:
+                "Estudo com\nCronômetro"
+            case .countdown:
+                "Estudo com\nTimer Definido"
+            }
+        }
+
+        var subtitle: String {
+            switch self {
+            case .stopwatch:
+                "Registre seu tempo de estudo sem limite de duração."
+            case .countdown:
+                "Defina a duração da sua sessão de estudo."
+            }
+        }
+
+        var symbolName: String {
+            switch self {
+            case .stopwatch:
+                "stopwatch.fill"
+            case .countdown:
+                "timer"
+            }
+        }
+    }
+
     enum TimerViewState: Equatable {
         case notStarted
         case running(TimerSnapshot)
@@ -136,6 +182,10 @@ extension StudySessionViewModel {
             "Retomar Timer"
         }
     }
+
+    var canConfirmTimerModeSelection: Bool {
+        selectedTimerModeOption != nil
+    }
 }
 
 private extension StudySessionViewModel {
@@ -160,5 +210,25 @@ private extension StudySessionViewModel {
         }
 
         return .notStarted
+    }
+}
+
+extension StudySessionViewModel {
+    func dismissTimerModePicker() {
+        selectedTimerModeOption = nil
+        isTimerModePickerPresented = false
+    }
+
+    func selectTimerModeOption(_ option: TimerModeOption) {
+        selectedTimerModeOption = option
+    }
+
+    func confirmTimerModeSelection() {
+        guard canConfirmTimerModeSelection else { return }
+
+        // TODO: no proximo passo, ligar cada opcao ao fluxo de configuracao
+        // e inicio real da sessao de estudos.
+        selectedTimerModeOption = nil
+        isTimerModePickerPresented = false
     }
 }

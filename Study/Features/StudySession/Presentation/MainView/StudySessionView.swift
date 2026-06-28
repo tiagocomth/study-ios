@@ -20,13 +20,21 @@ struct StudySessionView: View {
         }
         .padding(GlobalConfiguration.normalPadding)
         .background(AppColors.neutralWhite.ignoresSafeArea())
+        .disabled(viewModel.shouldDisableClick())
         .onTapGesture {
             viewModel.dismissDeleteCategory()
             viewModel.dismissEdit()
+            viewModel.dismissTimerModePicker()
         }
         .overlay {
-            if let categoryPendingDeletion = viewModel.categoryPendingDeletion {
-                deleteConfirmationOverlay(for: categoryPendingDeletion)
+            if viewModel.isTimerModePickerPresented {
+                
+                timerPicker
+                
+            } else if viewModel.categoryPendingDeletion != nil {
+                
+                confirmationDeletion
+                
             }
         }
         .task {
@@ -45,25 +53,30 @@ private extension StudySessionView {
         .disabled(!viewModel.canStartTimer)
         .frame(maxWidth: 320)
         .frame(maxWidth: .infinity)
+        .opacity(viewModel.isTimerModePickerPresented ? 0 : 1)
     }
-
-    func deleteConfirmationOverlay(for _: StudyCategory) -> some View {
-        ZStack {
-            Color.black.opacity(0.18)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    viewModel.dismissDeleteCategory()
-                }
-
-            StudySessionDeleteConfirmationView(
-                title: "Deseja Excluir sua matéria?",
-                onCancel: {
-                    viewModel.dismissDeleteCategory()
-                },
-                onConfirmDelete: {
-                    viewModel.confirmDeletePendingCategory()
-                }
-            )
-        }
+    
+    var timerPicker: some View {
+        StudySessionTimerModePickerView(
+            selectedOption: viewModel.selectedTimerModeOption,
+            canConfirm: viewModel.canConfirmTimerModeSelection,
+            onBack: viewModel.dismissTimerModePicker,
+            onSelect: viewModel.selectTimerModeOption,
+            onConfirm: viewModel.confirmTimerModeSelection
+        )
+        .padding(.horizontal, GlobalConfiguration.largePadding)
+        .frame(maxHeight: 500)
+    }
+    
+    var confirmationDeletion: some View {
+        StudySessionDeleteConfirmationView(
+            title: "Deseja Excluir sua matéria?",
+            onCancel: {
+                viewModel.dismissDeleteCategory()
+            },
+            onConfirmDelete: {
+                viewModel.confirmDeletePendingCategory()
+            }
+        )
     }
 }
