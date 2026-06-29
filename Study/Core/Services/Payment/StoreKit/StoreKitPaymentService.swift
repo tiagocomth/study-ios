@@ -61,7 +61,7 @@ final actor StoreKitPaymentService: PaymentProtocol {
             switch result {
             case .success(let verificationResult):
                 let transaction = try verified(verificationResult, fallbackIdentifier: identifier)
-                await apply(transaction: transaction, identifier: identifier)
+                await apply(transaction: transaction, identifier: identifier, jwsRepresentation: verificationResult.jwsRepresentation)
                 await transaction.finish()
                 logger.info("Purchase finished successfully for \(identifier.id)")
                 return .success(identifier)
@@ -158,7 +158,7 @@ private extension StoreKitPaymentService {
             let identifier = try productIdentifier(for: transaction)
 
             logger.debug("Received transaction update for \(identifier.id)")
-            await apply(transaction: transaction, identifier: identifier)
+            await apply(transaction: transaction, identifier: identifier, jwsRepresentation: result.jwsRepresentation)
             await transaction.finish()
         } catch {
             await emit(.failed(nil, error))
@@ -174,14 +174,14 @@ private extension StoreKitPaymentService {
                 let identifier = try productIdentifier(for: transaction)
 
                 guard isTransactionActive(transaction) else {
-                    await emitInactiveEvent(for: transaction, identifier: identifier)
+                    await emitInactiveEvent(for: transaction, identifier: identifier, jwsRepresentation: result.jwsRepresentation)
                     continue
                 }
 
                 activeIdentifiers.insert(identifier)
 
                 if !purchasedIdentifiers.contains(identifier) {
-                    await emitPurchased(for: transaction, identifier: identifier)
+                    await emitPurchased(for: transaction, identifier: identifier, jwsRepresentation: result.jwsRepresentation)
                 }
             } catch {
                 await emit(.failed(nil, error))
@@ -198,15 +198,15 @@ private extension StoreKitPaymentService {
         logger.info("Active entitlements refreshed: \(activeIdentifiers.map(\.id).joined(separator: ", "))")
     }
 
-    private func apply(transaction: Transaction, identifier: ProductIdentifier) async {
+    private func apply(transaction: Transaction, identifier: ProductIdentifier, jwsRepresentation: String) async {
         guard isTransactionActive(transaction) else {
             purchasedIdentifiers.remove(identifier)
-            await emitInactiveEvent(for: transaction, identifier: identifier)
+            await emitInactiveEvent(for: transaction, identifier: identifier, jwsRepresentation: jwsRepresentation)
             return
         }
 
         purchasedIdentifiers.insert(identifier)
-        await emitPurchased(for: transaction, identifier: identifier)
+        await emitPurchased(for: transaction, identifier: identifier, jwsRepresentation: jwsRepresentation)
     }
 
     private func verified(
@@ -251,12 +251,12 @@ private extension StoreKitPaymentService {
         return true
     }
 
-    private func emitInactiveEvent(for transaction: Transaction, identifier: ProductIdentifier) async {
+    private func emitInactiveEvent(for transaction: Transaction, identifier: ProductIdentifier, jwsRepresentation: String) async {
         if transaction.revocationDate != nil {
             await emit(
                 .revoked(
                     product: identifier,
-                    transactionJSON: transaction.jsonRepresentation
+                    jwsRepresentation: jwsRepresentation
                 )
             )
             return
@@ -266,7 +266,7 @@ private extension StoreKitPaymentService {
             await emit(
                 .expired(
                     product: identifier,
-                    transactionJSON: transaction.jsonRepresentation
+                    jwsRepresentation: jwsRepresentation
                 )
             )
         }
@@ -281,7 +281,7 @@ private extension StoreKitPaymentService {
             return
         }
 
-        await emitInactiveEvent(for: transaction, identifier: identifier)
+        await emitInactiveEvent(for: transaction, identifier: identifier, jwsRepresentation: result.jwsRepresentation)
     }
 
     private func emit(_ event: PaymentEvent) async {
@@ -290,11 +290,11 @@ private extension StoreKitPaymentService {
         await eventCallback(event)
     }
 
-    private func emitPurchased(for transaction: Transaction, identifier: ProductIdentifier) async {
+    private func emitPurchased(for transaction: Transaction, identifier: ProductIdentifier, jwsRepresentation: String) async {
         await emit(
             .purchased(
                 product: identifier,
-                transactionJSON: transaction.jsonRepresentation
+                jwsRepresentation: jwsRepresentation
             )
         )
     }

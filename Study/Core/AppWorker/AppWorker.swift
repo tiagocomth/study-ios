@@ -93,12 +93,7 @@ private extension AppWorker {
                 guard let self else { return }
                 
                 switch event {
-                case .purchased(_, let transactionJSON):
-                    guard let jwsString = String(data: transactionJSON, encoding: .utf8) else {
-                        paymentLogger.error("Could not convert transactionJSON to String")
-                        return
-                    }
-                    
+                case .purchased(_, let jwsString):
                     do {
                         let response: VerifyAppleTransactionResponse = try await self.apiClient.request(
                             PaymentEndpoint.verifyTransaction(signedTransactionInfo: jwsString)
