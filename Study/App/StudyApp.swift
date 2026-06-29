@@ -8,11 +8,18 @@ import SwiftUI
 @main
 struct StudyApp: App {
 
+    @Environment(\.scenePhase) private var scenePhase
     @State var appWorker = AppWorker()
 
     var body: some Scene {
         WindowGroup {
             RootView(appWorker: appWorker)
+                .onAppear {
+                    appWorker.updateLifecycleState(AppLifecycleState(scenePhase))
+                }
+                .onChange(of: scenePhase) { _, newScenePhase in
+                    appWorker.updateLifecycleState(AppLifecycleState(newScenePhase))
+                }
         }
     }
 }
@@ -34,8 +41,8 @@ private struct RootView: View {
                 MainView(session: session)
             } else {
                 CoordinateView(coordinator: appWorker.makeAuthCoordinator())
+                    
             }
         }
-        .task { session.restore() }
     }
 }

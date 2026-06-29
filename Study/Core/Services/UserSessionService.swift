@@ -54,6 +54,12 @@ final class UserSessionService: ObservableObject, UserSessionProtocol {
         keychain.readString(for: AppKeys.userToken.rawValue)
     }
 
+    var currentUserId: UUID? {
+        keychain
+            .read(User.self, for: AppKeys.userKey.rawValue)
+            .flatMap { UUID(uuidString: $0.id) }
+    }
+
     var isLoggedIn: Bool {
         currentUser != nil
     }
