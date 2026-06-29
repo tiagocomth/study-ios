@@ -22,6 +22,10 @@ final class ForgetPasswordViewModel: ObservableObject {
         }
     }
 
+    var isFormValid: Bool {
+        email.isValid()
+    }
+
     init(worker: ForgetPasswordWorkerProtocol) {
         self.worker = worker
     }
