@@ -11,6 +11,11 @@ struct SidebarView: View {
     @State private var isGroupsListExpanded: Bool = true
     @StateObject private var viewModel: SidebarViewModel
     
+    // Layout Constants
+    private let expandedWidth: CGFloat = 240
+    private let collapsedWidth: CGFloat = 70
+    private let horizontalPadding: CGFloat = 12
+    
     init(selection: Binding<AppTab?>, isExpanded: Binding<Bool>, viewModel: SidebarViewModel) {
         self._selection = selection
         self._isExpanded = isExpanded
@@ -23,7 +28,9 @@ struct SidebarView: View {
             
             // Toggle Button (Fixed at the top)
             Button(action: {
-                isExpanded.toggle()
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
+                }
             }) {
                 HStack(spacing: 12) {
                     Image(systemName: "sidebar.left")
@@ -34,6 +41,7 @@ struct SidebarView: View {
                 }
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             // TODO: Design System - Ajustar padding
@@ -70,34 +78,35 @@ struct SidebarView: View {
                     // TODO: Design System - Ajustar espaçamento
                     VStack(alignment: .leading, spacing: 16) {
                         if isExpanded {
-                            HStack {
-                                Button(action: {
-                                    selection = .myGroups
-                                }) {
+                            // Button when expanded
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isGroupsListExpanded.toggle()
+                                }
+                            }) {
+                                HStack {
                                     Text("Meus Grupos")
                                         .font(.subheadline)
                                         .foregroundColor(.primary)
-                                }
-                                .buttonStyle(.plain)
-                                
-                                Spacer(minLength: 0)
-                                
-                                Button(action: {
-                                    withAnimation {
-                                        isGroupsListExpanded.toggle()
-                                    }
-                                }) {
+                                        .fixedSize(horizontal: true, vertical: false)
+                                    
+                                    Spacer(minLength: 0)
+                                    
                                     Image(systemName: isGroupsListExpanded ? "chevron.down" : "chevron.right")
                                         .font(.caption2)
                                         .foregroundColor(.secondary)
                                         .padding(4) // Extra tap area
                                 }
-                                .buttonStyle(.plain)
+                                .contentShape(Rectangle())
                             }
+                            .buttonStyle(.plain)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         } else {
+                            // Divider when collapsed
                             Divider()
+                                .frame(width: collapsedWidth - (horizontalPadding * 2)) // fills collapsed area minus padding
+                                .transition(.opacity)
                         }
-                        
                         if isGroupsListExpanded {
                             if viewModel.isLoading {
                                 ProgressView()
@@ -140,12 +149,13 @@ struct SidebarView: View {
             // TODO: Design System - Ajustar padding
             .padding(.bottom, 32)
         }
+        .padding(.horizontal, horizontalPadding)
         .task {
             await viewModel.loadMyGroups()
         }
-        // TODO: Design System - Ajustar padding da borda da tela
-        .padding(.horizontal, 12)
-        .frame(width: isExpanded ? 240 : 70)
+        .frame(width: expandedWidth, alignment: .leading)
+        .frame(width: isExpanded ? expandedWidth : collapsedWidth, alignment: .leading)
+        .clipped()
         // TODO: implementar cor atual do app
         .background(Color.clear)
     }
@@ -169,6 +179,8 @@ struct SidebarButton: View {
                 if isExpanded {
                     Text(title)
                         .font(isSelected ? .body.bold() : .body)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .transition(.opacity)
                     Spacer(minLength: 0)
                 }
             }
@@ -176,6 +188,7 @@ struct SidebarButton: View {
             // TODO: Design System - Ajustar padding
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
+            .contentShape(Rectangle())
             .background(isSelected ? Color.gray.opacity(0.15) : Color.clear)
             .cornerRadius(8)
         }
@@ -197,13 +210,17 @@ struct SidebarGroupButton: View {
                     Text(title)
                         .font(isSelected ? .body.bold() : .body)
                         .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .transition(.opacity)
                     Spacer(minLength: 0)
                 }
             }
+            .frame(minHeight: 24)
             .foregroundColor(isSelected ? .primary : .primary.opacity(0.8))
             // TODO: Design System - Ajustar padding
             .padding(.vertical, 6)
             .padding(.horizontal, 12)
+            .contentShape(Rectangle())
             .background(isSelected ? Color.gray.opacity(0.15) : Color.clear)
             .cornerRadius(8)
         }

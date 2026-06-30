@@ -13,7 +13,13 @@ struct MainView: View {
     @State private var isSidebarExpanded: Bool = true
     
     var body: some View {
-        ZStack(alignment: .leading) {
+        HStack(spacing: 0) {
+            SidebarView(
+                selection: $selectedTab,
+                isExpanded: $isSidebarExpanded,
+                viewModel: SidebarViewModel(apiClient: appWorker.apiClient)
+            )
+            
             // Detail / Main Content
             ZStack {
                 switch selectedTab {
@@ -42,12 +48,6 @@ struct MainView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             //TODO: implementar cor atual do app
             .background(Color.clear)
-            
-            SidebarView(
-                selection: $selectedTab,
-                isExpanded: $isSidebarExpanded,
-                viewModel: SidebarViewModel(apiClient: appWorker.apiClient)
-            )
         }
     }
 }
