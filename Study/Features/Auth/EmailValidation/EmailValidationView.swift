@@ -8,25 +8,61 @@ import SwiftUI
 struct EmailValidationView: View {
     @StateObject var viewModel: EmailValidationViewModel
     @FocusState private var isCodeFieldFocused: Bool
-
+    
     var body: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 8) {
-                Text("Valide seu e-mail")
-                    .font(.largeTitle.bold())
+        HStack(spacing: 0) {
+            leftPanel
+            
+            Divider()
+            
+            rightPanel
+            
+        }
+        .navigationTitle("Validar E-mail")
+        .onAppear { isCodeFieldFocused = true }
+    }
+}
 
-                Text("Enviamos um código de \(EmailValidationViewModel.codeLength) dígitos para \(viewModel.email.value).")
+private extension EmailValidationView {
+
+    var leftPanel: some View {
+        Image("login")
+            .resizable()
+            .scaledToFill()
+            .clipped()
+    }
+
+    var rightPanel: some View {
+        VStack(spacing: 30) {
+            Spacer()
+
+            VStack(alignment: .center, spacing: 30) {
+                Text("Acabamos de enviar um código para o seu email")
+                    .font(.largeTitle.bold())
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.primary)
+
+                Text("Confirme sua identidade")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
             }
 
+            validationForm
+
+            Spacer()
+        }
+        .frame(maxWidth: 420)
+        .padding(60)
+    }
+
+    var validationForm: some View {
+        VStack(alignment: .leading, spacing: 24) {
             codeInput
 
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
+            if let error = viewModel.errorMessage {
+                Text(error)
+                    .foregroundStyle(AppColors.secondaryPure)
                     .font(.footnote)
-                    .foregroundStyle(.red)
             }
 
             Button {
@@ -36,33 +72,38 @@ struct EmailValidationView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                 } else {
-                    Text("Validar")
+                    Text("Continuar")
                         .frame(maxWidth: .infinity)
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(PrimaryButtonStyle())
             .disabled(!viewModel.isCodeComplete || viewModel.isLoading)
 
-            Button("Reenviar código") {
-                viewModel.resendCode()
+            HStack {
+                Spacer()
+                Button("Reenviar código") {
+                    viewModel.resendCode()
+                }
+                .buttonStyle(.link)
+                Spacer()
             }
-            .font(.footnote)
-            .disabled(viewModel.isLoading)
 
-            Spacer()
+            Text("Dica: Caso não encontre o e-mail na sua caixa de entrada, verifique a pasta spam!")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.top, 10)
         }
-        .padding()
-        .onAppear { isCodeFieldFocused = true }
     }
 
-    private var codeInput: some View {
+    var codeInput: some View {
         ZStack {
             // Campo real (invisível) que captura a digitação.
             TextField("", text: $viewModel.code)
                 .focused($isCodeFieldFocused)
                 .opacity(0.01)
                 .frame(height: 1)
+                .focusEffectDisabled()
 
             // Representação visual em caixas.
             HStack(spacing: 12) {
@@ -75,17 +116,43 @@ struct EmailValidationView: View {
         }
     }
 
-    private func digitBox(at index: Int) -> some View {
+    func digitBox(at index: Int) -> some View {
         let digits = Array(viewModel.code)
         let digit = index < digits.count ? String(digits[index]) : ""
         let isActive = index == digits.count && isCodeFieldFocused
 
         return Text(digit)
-            .font(.title.bold())
-            .frame(width: 48, height: 60)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isActive ? Color.accentColor : Color.secondary.opacity(0.4), lineWidth: 2)
+            .font(.title2.bold())
+            .frame(width: 48, height: 54)
+            .background(Color.adaptiveTextFieldBackground)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isActive ? Color.accentColor : Color.adaptiveSeparator, lineWidth: isActive ? 2 : 1)
             )
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+#if canImport(UIKit)
+import UIKit
+#else
+import AppKit
+#endif
+
+private extension Color {
+    static var adaptiveTextFieldBackground: Color {
+        #if canImport(UIKit)
+        return Color(uiColor: .secondarySystemBackground)
+        #else
+        return Color(nsColor: .controlBackgroundColor)
+        #endif
+    }
+
+    static var adaptiveSeparator: Color {
+        #if canImport(UIKit)
+        return Color(uiColor: .separator)
+        #else
+        return Color(nsColor: .separatorColor)
+        #endif
     }
 }
