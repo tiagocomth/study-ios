@@ -24,7 +24,7 @@ struct StudySessionTrackerLocalTests {
             makeId: { sessionId }
         )
 
-        _ = try await tracker.start(categoryId: categoryId, userId: userA)
+        _ = try await tracker.start(categoryId: categoryId, userId: userA, mode: .stopwatch)
 
         let restoredTracker = StudySessionTrackerLocal(userDefaults: userDefaults)
         await restoredTracker.ensureRestored(userId: userA)
@@ -41,8 +41,12 @@ struct StudySessionTrackerLocalTests {
         let userDefaults = makeUserDefaults()
         let tracker = StudySessionTrackerLocal(userDefaults: userDefaults)
 
-        _ = try await tracker.start(categoryId: categoryId, userId: userA)
-        _ = try await tracker.start(categoryId: UUID(uuidString: "55555555-5555-5555-5555-555555555555")!, userId: userB)
+        _ = try await tracker.start(categoryId: categoryId, userId: userA, mode: .stopwatch)
+        _ = try await tracker.start(
+            categoryId: UUID(uuidString: "55555555-5555-5555-5555-555555555555")!,
+            userId: userB,
+            mode: .stopwatch
+        )
 
         await tracker.clear(userId: userB)
 
@@ -60,6 +64,38 @@ struct StudySessionTrackerLocalTests {
 
         #expect(await tracker.restoreState(for: userA) == .restored)
         #expect(await tracker.getActiveSession(userId: userA) == nil)
+    }
+
+    @Test("countdown session keeps expected end date only while running")
+    func countdownExpectedEndDateFollowsRunningState() async throws {
+        var currentDate = now
+        let tracker = StudySessionTrackerLocal(
+            userDefaults: makeUserDefaults(),
+            now: { currentDate },
+            makeId: { UUID() }
+        )
+
+        _ = try await tracker.start(
+            categoryId: categoryId,
+            userId: userA,
+            mode: .countdown(durationSeconds: 300)
+        )
+
+        var session = await tracker.getActiveSession(userId: userA)
+        #expect(session?.expectedEndDate == now.addingTimeInterval(300))
+        #expect(session?.countdownDurationSeconds == 300)
+
+        currentDate = now.addingTimeInterval(120)
+        _ = try await tracker.pause(userId: userA)
+
+        session = await tracker.getActiveSession(userId: userA)
+        #expect(session?.expectedEndDate == nil)
+
+        currentDate = now.addingTimeInterval(180)
+        _ = try await tracker.resume(userId: userA)
+
+        session = await tracker.getActiveSession(userId: userA)
+        #expect(session?.expectedEndDate == currentDate.addingTimeInterval(180))
     }
 
     private func makeUserDefaults() -> UserDefaults {

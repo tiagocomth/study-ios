@@ -11,6 +11,7 @@ final class StudySessionViewModel: ObservableObject {
     weak var coordinator: StudySessionCoordinatorProtocol?
     let worker: StudySessionWorkerProtocol
     private var hasStarted = false
+    var isFinishingStudySession = false
     var categoryObservationTask: Task<Void, Never>?
     private var activeSessionObservationTask: Task<Void, Never>?
     private var timerObservationTask: Task<Void, Never>?
@@ -67,6 +68,7 @@ final class StudySessionViewModel: ObservableObject {
         selectedTimerModeOption = nil
         timerState = .notStarted
         isTimerScreenPresented = false
+        isFinishingStudySession = false
     }
 }
 
@@ -106,7 +108,9 @@ extension StudySessionViewModel {
                 let timerChanges = try await worker.timerChanges()
 
                 for await timerState in timerChanges {
-                    self.timerState = makeTimerViewState(from: timerState)
+                    let viewState = makeTimerViewState(from: timerState)
+                    self.timerState = viewState
+                    finishStudySessionIfCountdownCompleted(viewState)
                 }
             } catch let error as StudySessionError where error == .studySessionTimerNotConfigured {
                 timerState = .notStarted

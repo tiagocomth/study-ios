@@ -147,6 +147,9 @@ extension StudySessionViewModel {
     }
 
     func didTapFinishStudySession() {
+        guard isFinishingStudySession == false else { return }
+        isFinishingStudySession = true
+
         Task { [weak self] in
             guard let self else { return }
 
@@ -156,6 +159,7 @@ extension StudySessionViewModel {
                 // TODO: substituir o sleep pela animação de finalizar a sessão.
                 reset()
             } catch {
+                isFinishingStudySession = false
                 errorMessage = error.localizedDescription
             }
         }
@@ -173,6 +177,14 @@ extension StudySessionViewModel {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+
+    func finishStudySessionIfCountdownCompleted(_ timerState: TimerViewState) {
+        guard case .running(let snapshot) = timerState else { return }
+        guard case .countdown = snapshot.mode else { return }
+        guard (snapshot.remainingSeconds ?? 1) <= 0 else { return }
+
+        didTapFinishStudySession()
     }
     
     func makeTimerViewState(from state: StudySessionTimerState) -> TimerViewState {

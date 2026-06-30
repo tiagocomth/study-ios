@@ -78,7 +78,7 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
     }
 
     func startStudySession(categoryId: UUID, mode: StudySessionTimerMode) async throws {
-        try await studySessionManager.start(categoryId: categoryId)
+        try await studySessionManager.start(categoryId: categoryId, mode: mode)
         try await configureTimer(mode)
     }
 
@@ -92,7 +92,7 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
 
     func finishStudySession() async throws {
         guard let id = currentUserId() else { throw StudySessionError.missingCurrentUser }
-        try await studySessionManager.finish()
+        try await studySessionManager.finish(endDate: nil)
         await timerModeStore.clear(userId: id)
     }
     

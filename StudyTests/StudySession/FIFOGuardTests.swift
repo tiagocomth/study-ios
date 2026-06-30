@@ -56,7 +56,7 @@ struct FIFOGuardTests {
             currentUserId: { userId }
         )
 
-        try await manager.start(categoryId: categoryId)
+        try await manager.start(categoryId: categoryId, mode: .stopwatch)
         await settleBackgroundWork()
 
         #expect(await studySessionAPI.startCallCount == 0)
@@ -83,7 +83,7 @@ struct FIFOGuardTests {
             currentUserId: { userId }
         )
 
-        try await manager.finish()
+        try await manager.finish(endDate: nil)
         await settleBackgroundWork()
 
         #expect(await studySessionAPI.resumeCallCount == 0)
@@ -198,7 +198,11 @@ private struct StudySessionTrackerLocalSpy: StudySessionTrackerLocalProtocol {
     func ensureRestored(userId: UUID) async {}
     func getActiveSession(userId: UUID) async -> LocalStudySession? { nil }
 
-    func start(categoryId: UUID, userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+    func start(
+        categoryId: UUID,
+        userId: UUID,
+        mode: StudySessionTimerMode
+    ) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
         guard let action = await state.startAction else {
             throw .sessionNotFound
         }
@@ -208,7 +212,7 @@ private struct StudySessionTrackerLocalSpy: StudySessionTrackerLocalProtocol {
     func pause(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction { throw .sessionNotFound }
     func resume(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction { throw .sessionNotFound }
 
-    func finish(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+    func finish(userId: UUID, endDate: Date?) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
         guard let action = await state.finishAction else {
             throw .sessionNotFound
         }

@@ -121,6 +121,8 @@ final class StudySessionFactory {
         await studySessionTracker.ensureRestored(userId: userId)
         await offlineOperationQueue.ensureRestored(userId: userId)
 
+        guard await finishExpectedCountdownIfNeeded(userId: userId) == false else { return }
+
         guard let session = await studySessionTracker.getActiveSession(userId: userId) else { return }
         guard StudySessionExpirationPolicy.shouldExpire(session, now: now()) else { return }
 
@@ -144,6 +146,27 @@ final class StudySessionFactory {
 }
 
 private extension StudySessionFactory {
+    func finishExpectedCountdownIfNeeded(userId: UUID) async -> Bool {
+        guard
+            let session = await studySessionTracker.getActiveSession(userId: userId),
+            session.state == .running,
+            let expectedEndDate = session.expectedEndDate,
+            expectedEndDate <= now()
+        else {
+            return false
+        }
+
+        do {
+            try await studySessionManager.finish(endDate: expectedEndDate)
+            await timerModeStore.clear(userId: userId)
+            OfflineOperationQueueLogger().info("Finished expired countdown session \(session.sessionId.uuidString)")
+            return true
+        } catch {
+            OfflineOperationQueueLogger().error("Failed to finish expired countdown session \(session.sessionId.uuidString): \(error.localizedDescription)")
+            return false
+        }
+    }
+
     func makeStudySessionViewModel() -> StudySessionViewModel {
         let viewModel = StudySessionViewModel(worker: makeStudySessionWorker())
         viewModel.coordinator = coordinator
