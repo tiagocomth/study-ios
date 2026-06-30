@@ -85,6 +85,14 @@ extension StudySessionViewModel {
     func dismissDeleteCategory() {
         categoryPendingDeletion = nil
     }
+
+    var deleteConfirmationTitle: String {
+        guard let categoryPendingDeletion else {
+            return "Deseja Excluir esta matéria?"
+        }
+
+        return "Deseja Excluir \(categoryPendingDeletion.name)?"
+    }
     
     func dismissEdit() {
         editingCategoryId = nil

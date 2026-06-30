@@ -22,7 +22,7 @@ final class StudySessionViewModel: ObservableObject {
     @Published var categories: [StudyCategory] = []
     @Published private(set) var activeSession: LocalStudySession?
     @Published private(set) var timerState: TimerViewState = .notStarted
-    @Published private(set) var isTimerScreenPresented = false
+    @Published var isTimerScreenPresented = false
     @Published var errorMessage: String?
 
     @Published var selectedCategoryId: UUID?
@@ -62,12 +62,16 @@ final class StudySessionViewModel: ObservableObject {
         loadCategories()
     }
 
-    func reset() {
+    func reset(shouldDismissTimerScreen: Bool = true) {
         activeSession = nil
         selectedCategoryId = nil
         selectedTimerModeOption = nil
         timerState = .notStarted
-        isTimerScreenPresented = false
+
+        if shouldDismissTimerScreen {
+            isTimerScreenPresented = false
+        }
+
         isFinishingStudySession = false
     }
 }

@@ -115,7 +115,7 @@ private extension StudySessionView {
     
     var confirmationDeletion: some View {
         StudySessionDeleteConfirmationView(
-            title: "Deseja Excluir sua matéria?",
+            title: viewModel.deleteConfirmationTitle,
             onCancel: {
                 viewModel.dismissDeleteCategory()
             },

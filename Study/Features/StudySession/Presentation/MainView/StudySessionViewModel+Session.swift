@@ -155,9 +155,10 @@ extension StudySessionViewModel {
 
             do {
                 try await worker.finishStudySession()
+                reset(shouldDismissTimerScreen: false)
                 try? await Task.sleep(for: .seconds(3))
                 // TODO: substituir o sleep pela animação de finalizar a sessão.
-                reset()
+                isTimerScreenPresented = false
             } catch {
                 isFinishingStudySession = false
                 errorMessage = error.localizedDescription
