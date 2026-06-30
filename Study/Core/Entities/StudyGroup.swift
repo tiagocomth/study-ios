@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct StudyGroup: Identifiable {
+struct StudyGroup: Identifiable, Hashable {
     let id: String
     let ownerId: String
     let name: String
