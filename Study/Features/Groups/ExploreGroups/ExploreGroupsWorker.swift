@@ -15,16 +15,27 @@ protocol ExploreGroupsWorkerProtocol {
 
     /// Deve carregar a próxima página ao exibir o item no índice `index`?
     func shouldLoadMore(at index: Int, loaded: Int, total: Int) -> Bool
+
+    /// O usuário logado é o dono do grupo? Dono já é membro, então pode entrar
+    /// direto na tela do grupo, sem passar pelo pop-up de entrada.
+    func isOwner(of group: StudyGroup) -> Bool
 }
 
 final class ExploreGroupsWorker: ExploreGroupsWorkerProtocol {
     private let service: ExploreGroupsServiceProtocol
+    private let userSession: UserSessionProtocol
 
     /// Quantas linhas antes do fim disparam o carregamento da próxima página.
     private let prefetchThreshold = 3
 
-    init(service: ExploreGroupsServiceProtocol) {
+    init(service: ExploreGroupsServiceProtocol, userSession: UserSessionProtocol) {
         self.service = service
+        self.userSession = userSession
+    }
+
+    func isOwner(of group: StudyGroup) -> Bool {
+        guard let userId = userSession.currentUser?.id else { return false }
+        return userId == group.ownerId
     }
 
     func exploreGroups(searchText: String, privacy: GroupPrivacyFilter, page: Int) async throws -> GroupsPage {

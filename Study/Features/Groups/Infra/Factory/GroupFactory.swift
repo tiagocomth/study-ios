@@ -9,6 +9,7 @@ final class GroupFactory {
 
     weak var groupCoordinator: GroupCoordinator?
     private let apiClient: APIClientProtocol
+    private let userSession: UserSessionProtocol
 
     /// Mantém uma única instância da VM da Explore. A `rootView` do coordinator é
     /// uma computed property e pode ser acessada várias vezes; sem cache, cada
@@ -16,8 +17,9 @@ final class GroupFactory {
     /// a que o `@StateObject` da tela está exibindo).
     private var exploreGroupsViewModel: ExploreGroupsViewModel?
 
-    init(apiClient: APIClientProtocol) {
+    init(apiClient: APIClientProtocol, userSession: UserSessionProtocol) {
         self.apiClient = apiClient
+        self.userSession = userSession
     }
 
     func makeExploreGroupsView() -> some View {
@@ -28,6 +30,16 @@ final class GroupFactory {
     func makeCreateGroupView() -> some View {
         let viewModel = makeCreateGroupVM()
         return CreateGroupView(viewModel: viewModel)
+    }
+
+    func makeJoinGroupView(group: StudyGroup) -> some View {
+        let viewModel = makeJoinGroupVM(group: group)
+        return JoinGroupView(viewModel: viewModel)
+    }
+
+    func makeGroupDetailsView(group: StudyGroup) -> some View {
+        let viewModel = makeGroupDetailsVM(group: group)
+        return GroupDetailsView(viewModel: viewModel)
     }
 }
 
@@ -40,7 +52,7 @@ extension GroupFactory {
         }
 
         let service = ExploreGroupsService(apiClient: apiClient)
-        let worker = ExploreGroupsWorker(service: service)
+        let worker = ExploreGroupsWorker(service: service, userSession: userSession)
         let viewModel = ExploreGroupsViewModel(worker: worker)
 
         viewModel.coordinator = groupCoordinator
@@ -54,6 +66,24 @@ extension GroupFactory {
         let service = CreateGroupService(apiClient: apiClient)
         let worker = CreateGroupWorker(service: service)
         let viewModel = CreateGroupViewModel(worker: worker)
+
+        viewModel.coordinator = groupCoordinator
+        return viewModel
+    }
+
+    private func makeJoinGroupVM(group: StudyGroup) -> JoinGroupViewModel {
+        let service = JoinGroupPasswordService(apiClient: apiClient)
+        let worker = JoinGroupPasswordWorker(service: service)
+        let viewModel = JoinGroupViewModel(group: group, worker: worker)
+
+        viewModel.coordinator = groupCoordinator
+        return viewModel
+    }
+
+    private func makeGroupDetailsVM(group: StudyGroup) -> GroupDetailsViewModel {
+        let service = GroupService(apiClient: apiClient)
+        let worker = GroupDetailsWorker(service: service)
+        let viewModel = GroupDetailsViewModel(group: group, worker: worker)
 
         viewModel.coordinator = groupCoordinator
         return viewModel

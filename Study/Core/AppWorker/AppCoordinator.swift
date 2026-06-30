@@ -20,9 +20,9 @@ final class AppCoordinator {
         return authCoordinator
     }
 
-    func makeGroupCoordinator(apiClient: APIClientProtocol) -> GroupCoordinator {
+    func makeGroupCoordinator(apiClient: APIClientProtocol, session: UserSessionProtocol) -> GroupCoordinator {
         guard let groupCoordinator else {
-            self.groupCoordinator = GroupCoordinator(factory: .init(apiClient: apiClient))
+            self.groupCoordinator = GroupCoordinator(factory: .init(apiClient: apiClient, userSession: session))
             return self.groupCoordinator!
         }
 

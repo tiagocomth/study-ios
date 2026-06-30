@@ -57,6 +57,16 @@ final class ExploreGroupsViewModel: ObservableObject {
         coordinator?.presentCreateGroup()
     }
 
+    /// Toque num grupo da lista. Se o usuário já é dono (logo, membro), entra
+    /// direto na tela do grupo; senão, abre o pop-up de entrada.
+    func groupTapped(_ group: StudyGroup) {
+        if worker.isOwner(of: group) {
+            coordinator?.showGroupDetails(group: group)
+        } else {
+            coordinator?.presentJoinGroup(group: group)
+        }
+    }
+
     /// Recarrega quando o texto (com debounce) ou o segmento de privacidade muda.
     private func bindFilters() {
         // Texto: aplica debounce para não disparar a cada tecla.

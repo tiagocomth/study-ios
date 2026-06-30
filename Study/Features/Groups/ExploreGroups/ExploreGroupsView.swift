@@ -58,8 +58,14 @@ struct ExploreGroupsView: View {
         } else {
             List {
                 ForEach(viewModel.groups) { group in
-                    GroupRow(group: group)
-                        .onAppear { viewModel.loadMoreIfNeeded(currentItem: group) }
+                    Button {
+                        viewModel.groupTapped(group)
+                    } label: {
+                        GroupRow(group: group)
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                    .onAppear { viewModel.loadMoreIfNeeded(currentItem: group) }
                 }
 
                 if viewModel.isLoadingMore {

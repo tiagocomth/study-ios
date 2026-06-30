@@ -39,7 +39,7 @@ final class CreateGroupViewModel: ObservableObject {
 
         Task {
             do {
-                _ = try await worker.createGroup(
+                let createdGroup = try await worker.createGroup(
                     name: name,
                     description: groupDescription,
                     isPrivate: isPrivate,
@@ -48,9 +48,9 @@ final class CreateGroupViewModel: ObservableObject {
                 )
                 await MainActor.run {
                     isLoading = false
-                    // Fecha o sheet; o `onDismiss` do coordinator recarrega a Explore
-                    // já com o novo grupo.
-                    coordinator?.dismissCreateGroup()
+                    // Quem cria já é membro: fecha o sheet (o `onDismiss` recarrega
+                    // a Explore) e entra direto na tela do grupo recém-criado.
+                    coordinator?.completeJoin(group: createdGroup)
                 }
             } catch {
                 await MainActor.run {

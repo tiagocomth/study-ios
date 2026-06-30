@@ -10,4 +10,10 @@ enum GroupRouter: Hashable, Identifiable {
 
     /// Apresentada como sheet a partir da Explore.
     case createGroup
+
+    /// Pop-up (sheet) de entrada em um grupo, aberto ao tocar num item da Explore.
+    case joinGroup(StudyGroup)
+
+    /// Tela de membros (push), exibida após entrar no grupo.
+    case groupDetails(StudyGroup)
 }

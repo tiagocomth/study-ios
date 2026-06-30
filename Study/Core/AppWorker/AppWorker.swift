@@ -47,7 +47,7 @@ final class AppWorker {
     }
 
     func makeGroupCoordinator() -> GroupCoordinator {
-        return appCoordinator.makeGroupCoordinator(apiClient: apiClient)
+        return appCoordinator.makeGroupCoordinator(apiClient: apiClient, session: userSessionService)
     }
 
 }
