@@ -7,6 +7,7 @@ import Foundation
 import Combine
 
 final class CodeViewModel: ObservableObject {
+    let email: Email
     weak var coordinator: CodeCoordinatorProtocol?
     private let worker: CodeWorkerProtocol
     private var code = PasswordResetCode()
@@ -23,7 +24,8 @@ final class CodeViewModel: ObservableObject {
         }
     }
 
-    init(worker: CodeWorkerProtocol) {
+    init(email: Email, worker: CodeWorkerProtocol) {
+        self.email = email
         self.worker = worker
     }
 
@@ -37,7 +39,7 @@ final class CodeViewModel: ObservableObject {
 
         Task {
             do {
-                try await worker.validatePasswordResetCode(code)
+                try await worker.validatePasswordResetCode(email: email, code: code)
                 await MainActor.run {
                     isLoading = false
                     coordinator?.navigateToNewPassword()

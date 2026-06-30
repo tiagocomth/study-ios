@@ -33,8 +33,6 @@ final class ForgetPasswordViewModel: ObservableObject {
     func recoverPassword() {
         guard !isLoading else { return }
 
-        let email = email
-
         isLoading = true
         errorMessage = nil
 
@@ -43,7 +41,7 @@ final class ForgetPasswordViewModel: ObservableObject {
                 try await worker.requestPasswordReset(email: email)
                 await MainActor.run {
                     isLoading = false
-                    coordinator?.navigateToCode()
+                    coordinator?.navigateToCode(email: email)
                 }
             } catch {
                 await MainActor.run {

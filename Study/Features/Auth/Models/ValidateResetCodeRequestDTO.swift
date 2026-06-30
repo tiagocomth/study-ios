@@ -7,5 +7,6 @@ import Foundation
 
 /// Valida o código de reset de senha recebido por e-mail.
 struct ValidateResetCodeRequestDTO: Encodable {
-    let code: String
+    let email: String
+    let otp: String
 }

@@ -26,8 +26,8 @@ enum AuthEndpoint: Endpoint {
         case .register: "/auth/register"
         case .verifyEmailValidation: "/auth/register/verify"
         case .requestPasswordReset: "/auth/forgot-password"
-        case .validatePasswordResetCode: "/auth/forgot-password/verify"        // TODO: confirmar path real
-        case .updatePassword: "/auth/forgot-password/reset"           // TODO: confirmar path real
+        case .validatePasswordResetCode: "/auth/forgot-password/verify"
+        case .updatePassword: "/auth/forgot-password/reset"
         }
     }
 

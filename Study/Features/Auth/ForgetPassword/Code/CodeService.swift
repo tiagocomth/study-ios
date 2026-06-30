@@ -6,7 +6,7 @@
 import Foundation
 
 protocol CodeServiceProtocol {
-    func validatePasswordResetCode(_ code: String) async throws(NetworkError) -> String
+    func validatePasswordResetCode(email: String, code: String) async throws(NetworkError) -> String
 }
 
 final class CodeService: CodeServiceProtocol {
@@ -16,11 +16,11 @@ final class CodeService: CodeServiceProtocol {
         self.apiClient = apiClient
     }
 
-    func validatePasswordResetCode(_ code: String) async throws(NetworkError) -> String {
+    func validatePasswordResetCode(email: String, code: String) async throws(NetworkError) -> String {
         let endpoint = AuthEndpoint.validatePasswordResetCode(
-            ValidateResetCodeRequestDTO(code: code)
+            ValidateResetCodeRequestDTO(email: email, otp: code)
         )
         let response: ValidateResetCodeResponseDTO = try await apiClient.request(endpoint)
-        return response.otp
+        return response.resetToken
     }
 }

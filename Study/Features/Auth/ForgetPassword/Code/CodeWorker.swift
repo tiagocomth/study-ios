@@ -6,7 +6,7 @@
 import Foundation
 
 protocol CodeWorkerProtocol {
-    func validatePasswordResetCode(_ code: PasswordResetCode) async throws
+    func validatePasswordResetCode(email: Email, code: PasswordResetCode) async throws
 }
 
 final class CodeWorker: CodeWorkerProtocol {
@@ -18,13 +18,13 @@ final class CodeWorker: CodeWorkerProtocol {
         self.sessionStore = sessionStore
     }
 
-    func validatePasswordResetCode(_ code: PasswordResetCode) async throws {
-        guard code.isValid() else {
+    func validatePasswordResetCode(email: Email, code: PasswordResetCode) async throws {
+        guard code.isValid(), email.isValid() else {
             throw CodeWorkerError.invalidCode
         }
 
-        let otp = try await service.validatePasswordResetCode(code.value)
-        sessionStore.save(otp)
+        let resetToken = try await service.validatePasswordResetCode(email: email.value, code: code.value)
+        sessionStore.save(resetToken)
     }
 }
 
