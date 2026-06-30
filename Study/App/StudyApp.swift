@@ -47,7 +47,7 @@ private struct RootView: View {
     var body: some View {
         Group {
             if session.isLoggedIn {
-                MainView(session: session)
+                MainView(session: session, appWorker: appWorker)
             } else {
                 CoordinateView(coordinator: appWorker.makeAuthCoordinator())
                     

@@ -63,6 +63,14 @@ final class AppWorker {
         appCoordinator.makeStudySessionCoordinator(factory: studySessionFactory)
     }
 
+    func makeGroupCoordinator(factory: GroupFactory) -> GroupCoordinator {
+        appCoordinator.makeGroupCoordinator(factory: factory)
+    }
+
+    func makeProfileCoordinator(factory: ProfileFactory) -> ProfileCoordinator {
+        appCoordinator.makeProfileCoordinator(factory: factory)
+    }
+
     func updateLifecycleState(_ state: AppLifecycleState) {
         appLifecycleService.updateState(state)
     }
