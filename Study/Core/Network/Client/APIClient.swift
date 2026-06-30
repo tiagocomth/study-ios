@@ -84,7 +84,7 @@ extension APIClient {
 
         logger?.logResponse(httpResponse, data: data, for: request)
 
-        try checkStatus(status: httpResponse.statusCode)
+        try checkStatus(status: httpResponse.statusCode, data: data)
 
         // Responses with no body (e.g. 204 No Content or a DELETE): only an
         // `EmptyResponse` is valid here — decoding anything else would fail.
@@ -107,28 +107,45 @@ extension APIClient {
 
     }
 
-    private func checkStatus(status: Int) throws(NetworkError) {
+    private func checkStatus(status: Int, data: Data) throws(NetworkError) {
+        // Quando a API devolve um corpo de erro (`{ message, ... }`), preferimos
+        // essa mensagem do servidor à mensagem genérica — assim a UI mostra o
+        // motivo real (ex.: "Você já é membro deste grupo.").
+        let serverMessage = Self.serverMessage(from: data)
+
         switch status {
         case 200...299:
             return
         case 401:
             interceptor?.handleUnauthorized()
             throw NetworkError.unauthorized(
-                message: "Unauthorized request. Authentication required."
+                message: serverMessage ?? "Unauthorized request. Authentication required."
             )
         case 403:
             throw NetworkError.forbidden(
-                message: "Forbidden request. You don't have permission to access this resource."
+                message: serverMessage ?? "Forbidden request. You don't have permission to access this resource."
             )
         case 404:
             throw NetworkError.notFound(
-                message: "Requested resource was not found."
+                message: serverMessage ?? "Requested resource was not found."
             )
         default:
             throw NetworkError.invalidStatusCode(
                 codeStatus: status,
-                message: "Unexpected status code: \(status)"
+                message: serverMessage ?? "Unexpected status code: \(status)"
             )
         }
+    }
+
+    /// Extrai o campo `message` de um corpo de erro padrão da API. `nil` quando o
+    /// corpo é vazio ou não tem essa forma.
+    private static func serverMessage(from data: Data) -> String? {
+        struct ServerErrorBody: Decodable { let message: String? }
+        guard !data.isEmpty,
+              let body = try? JSONDecoder().decode(ServerErrorBody.self, from: data),
+              let message = body.message,
+              !message.isEmpty
+        else { return nil }
+        return message
     }
 }
