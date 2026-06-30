@@ -31,9 +31,7 @@ final class ExploreGroupsService: ExploreGroupsServiceProtocol {
         }
 
         let response: PaginatedGroupsResponseDTO = try await apiClient.request(endpoint)
-        // O backend não retorna `isPrivate` no corpo; quando filtramos por
-        // privacidade, carimbamos o valor do filtro nos grupos retornados.
-        let groups = response.data.map { $0.toDomain(privacyOverride: isPrivate) }
+        let groups = response.data.map { $0.toDomain() }
         return GroupsPage(groups: groups, total: response.total)
     }
 }

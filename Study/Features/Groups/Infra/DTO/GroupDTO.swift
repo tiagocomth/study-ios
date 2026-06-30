@@ -27,9 +27,7 @@ struct GroupDTO: Decodable {
         ownerId = try container.decode(String.self, forKey: .ownerId)
         name = try container.decode(String.self, forKey: .name)
         description = try container.decodeIfPresent(String.self, forKey: .description)
-        // `/groups/all` lista só grupos públicos e omite `isPrivate`; create/search
-        // trazem o campo. Ausência = público (false).
-        isPrivate = try container.decodeIfPresent(Bool.self, forKey: .isPrivate) ?? false
+        isPrivate = try container.decode(Bool.self, forKey: .isPrivate)
         maxMembers = try container.decode(Int.self, forKey: .maxMembers)
 
         // A API envia ISO8601 com frações de segundo (ex.: "2026-06-23T20:42:49.869Z"),
@@ -45,18 +43,13 @@ struct GroupDTO: Decodable {
     }()
 
     /// Converte para a entidade de domínio.
-    /// - Parameter privacyOverride: o backend hoje **não devolve** `isPrivate` no
-    ///   payload, mesmo nas queries filtradas. Quando a busca usa um filtro de
-    ///   privacidade, o servidor garante que todos os grupos batem com ele, então
-    ///   passamos esse valor aqui para carimbar o grupo corretamente. `nil`
-    ///   (filtro "Todos") mantém o valor decodificado (default `false`).
-    func toDomain(privacyOverride: Bool? = nil) -> StudyGroup {
+    func toDomain() -> StudyGroup {
         StudyGroup(
             id: groupId,
             ownerId: ownerId,
             name: name,
             description: description,
-            isPrivate: privacyOverride ?? isPrivate,
+            isPrivate: isPrivate,
             maxMembers: maxMembers,
             createdAt: createdAt
         )
