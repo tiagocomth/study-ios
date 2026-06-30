@@ -29,6 +29,7 @@ private extension EmailValidationView {
         Image("login")
             .resizable()
             .scaledToFill()
+            .frame(maxWidth: .infinity)
             .clipped()
     }
 
@@ -53,6 +54,7 @@ private extension EmailValidationView {
         }
         .frame(maxWidth: 420)
         .padding(60)
+        .frame(maxWidth: .infinity)
     }
 
     var validationForm: some View {

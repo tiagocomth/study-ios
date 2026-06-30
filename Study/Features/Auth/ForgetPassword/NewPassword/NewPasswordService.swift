@@ -18,7 +18,7 @@ final class NewPasswordService: NewPasswordServiceProtocol {
 
     func updatePassword(_ password: Password, otp: String) async throws(NetworkError) {
         let endpoint = AuthEndpoint.updatePassword(
-            NewPasswordRequestDTO(password: password.value)
+            NewPasswordRequestDTO(newPassword: password.value)
         )
         // O OTP vai como bearer token desta chamada (não no corpo).
         let _: EmptyResponse = try await apiClient.request(endpoint, token: otp)

@@ -9,20 +9,70 @@ struct NewPasswordView: View {
     @StateObject var viewModel: NewPasswordViewModel
 
     var body: some View {
-        VStack {
-            Text("Nova senha")
-                .font(.title)
+        HStack(spacing: 0) {
+            leftPanel
 
-            SecureField("Senha", text: $viewModel.passwordValue)
-                .textFieldStyle(.roundedBorder)
+            Divider()
 
-            SecureField("Confirmar senha", text: $viewModel.passwordConfirmationValue)
-                .textFieldStyle(.roundedBorder)
+            rightPanel
+        }
+        .navigationTitle("Nova senha")
+    }
+}
 
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
+private extension NewPasswordView {
+
+    var leftPanel: some View {
+        Image("login")
+            .resizable()
+            .scaledToFill()
+            .frame(maxWidth: .infinity)
+            .clipped()
+    }
+
+    var rightPanel: some View {
+        VStack(spacing: 30) {
+            Spacer()
+
+            VStack(alignment: .center, spacing: 10) {
+                Text("Esqueci Senha")
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(.primary)
+
+                Text("Crie uma nova senha segura para sua conta.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+
+            newPasswordForm
+
+            Spacer()
+        }
+        .frame(maxWidth: 420)
+        .padding(60)
+        .frame(maxWidth: .infinity)
+    }
+
+    var newPasswordForm: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            AuthTextField(
+                title: "Senha",
+                placeholder: "Digite sua nova senha",
+                isSecure: true,
+                text: $viewModel.passwordValue
+            )
+
+            AuthTextField(
+                title: "Confirmar senha",
+                placeholder: "Confirme sua nova senha",
+                isSecure: true,
+                text: $viewModel.passwordConfirmationValue
+            )
+
+            if let error = viewModel.errorMessage {
+                Text(error)
+                    .foregroundStyle(AppColors.secondaryPure)
                     .font(.footnote)
-                    .foregroundStyle(.red)
             }
 
             Button {
@@ -30,13 +80,14 @@ struct NewPasswordView: View {
             } label: {
                 if viewModel.isLoading {
                     ProgressView()
+                        .frame(maxWidth: .infinity)
                 } else {
-                    Text("Alterar senha")
+                    Text("Confirmar")
+                        .frame(maxWidth: .infinity)
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(viewModel.isLoading)
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(!viewModel.isFormValid || viewModel.isLoading)
         }
-        .padding()
     }
 }
