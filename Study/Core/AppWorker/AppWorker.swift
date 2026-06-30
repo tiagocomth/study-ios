@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftData
 
 @MainActor
 final class AppWorker {
@@ -25,7 +26,7 @@ final class AppWorker {
     private let studySessionFactory: StudySessionFactory
     private var appTasks: [Task<Void, Never>]
 
-    init() {
+    init(modelContainer: ModelContainer) {
         let session = UserSessionService()
         session.restore()
         self.userSessionService = session
@@ -37,7 +38,7 @@ final class AppWorker {
         self.apiClient = APIClient(
             tokenProvider: TokenProvider { session.token }
         )
-        self.studySessionFactory = StudySessionFactory(apiClient: apiClient, userSession: session)
+        self.studySessionFactory = StudySessionFactory(apiClient: apiClient, userSession: session, modelContainer: modelContainer)
         
         self.connectivityMonitorService = ConnectivityMonitorService()
         self.appLifecycleService = AppLifecycleService()
@@ -60,6 +61,14 @@ final class AppWorker {
 
     func makeStudySessionCoordinator() -> StudySessionCoordinator {
         appCoordinator.makeStudySessionCoordinator(factory: studySessionFactory)
+    }
+
+    func makeGroupCoordinator(factory: GroupFactory) -> GroupCoordinator {
+        appCoordinator.makeGroupCoordinator(factory: factory)
+    }
+
+    func makeProfileCoordinator(factory: ProfileFactory) -> ProfileCoordinator {
+        appCoordinator.makeProfileCoordinator(factory: factory)
     }
 
     func updateLifecycleState(_ state: AppLifecycleState) {

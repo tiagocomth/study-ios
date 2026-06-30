@@ -9,6 +9,8 @@ final class AppCoordinator {
     
     private var authCoordinator: AuthCoordinator?
     private var studySessionCoordinator: StudySessionCoordinator?
+    private var groupCoordinator: GroupCoordinator?
+    private var profileCoordinator: ProfileCoordinator?
     
     func makeAuthCoordinator(apiClient: APIClientProtocol, session: UserSessionProtocol) -> AuthCoordinator {
         guard let authCoordinator else {
@@ -28,5 +30,22 @@ final class AppCoordinator {
         }
 
         return studySessionCoordinator
+    }
+    func makeGroupCoordinator(factory: GroupFactory) -> GroupCoordinator {
+        guard let groupCoordinator else {
+            let coordinator = GroupCoordinator(factory: factory)
+            self.groupCoordinator = coordinator
+            return coordinator
+        }
+        return groupCoordinator
+    }
+
+    func makeProfileCoordinator(factory: ProfileFactory) -> ProfileCoordinator {
+        guard let profileCoordinator else {
+            let coordinator = ProfileCoordinator(factory: factory)
+            self.profileCoordinator = coordinator
+            return coordinator
+        }
+        return profileCoordinator
     }
 }

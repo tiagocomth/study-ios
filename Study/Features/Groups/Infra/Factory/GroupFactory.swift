@@ -6,5 +6,22 @@
 import SwiftUI
 
 final class GroupFactory {
-    // TODO: cria as Views e gerencia o ciclo de vida dos ViewModels
+    
+    weak var groupCoordinator: GroupCoordinator?
+    
+    private let apiClient: APIClientProtocol
+    private let userSession: UserSessionProtocol
+    
+    init(apiClient: APIClientProtocol, userSession: UserSessionProtocol) {
+        self.apiClient = apiClient
+        self.userSession = userSession
+    }
+    
+    func makeExploreGroupsView() -> some View {
+        let service = ExploreGroupsService()
+        let worker = ExploreGroupsWorker(service: service)
+        let vm = ExploreGroupsViewModel(worker: worker)
+        vm.coordinator = groupCoordinator
+        return ExploreGroupsView(viewModel: vm)
+    }
 }
