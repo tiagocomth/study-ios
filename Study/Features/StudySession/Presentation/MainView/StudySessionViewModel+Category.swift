@@ -132,8 +132,6 @@ extension StudySessionViewModel {
             return nil
         }
 
-        // TODO: integrar edicao real da categoria.
-        _ = id
         return validatedName
     }
 

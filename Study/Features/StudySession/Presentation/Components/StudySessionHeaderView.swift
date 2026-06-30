@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct StudySessionHeaderView: View {
+    let subTitle: String
     
     var body: some View {
         VStack(alignment: .leading, spacing: GlobalConfiguration.largeSpacing) {
@@ -21,8 +22,8 @@ struct StudySessionHeaderView: View {
                     .font(.title)
                     .fontWeight(.semibold)
                     .foregroundStyle(AppColors.neutralBlack)
-                
-                Text("Selecione sua matéria")
+
+                Text(subTitle)
                     .font(.title2)
                     .foregroundStyle(AppColors.neutralBlack)
             }
@@ -31,5 +32,5 @@ struct StudySessionHeaderView: View {
 }
 
 #Preview {
-    StudySessionHeaderView()
+    StudySessionHeaderView(subTitle: "Selecione sua matéria")
 }

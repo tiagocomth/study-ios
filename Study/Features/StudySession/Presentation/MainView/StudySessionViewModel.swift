@@ -21,6 +21,7 @@ final class StudySessionViewModel: ObservableObject {
     @Published var categories: [StudyCategory] = []
     @Published private(set) var activeSession: LocalStudySession?
     @Published private(set) var timerState: TimerViewState = .notStarted
+    @Published private(set) var isTimerScreenPresented = false
     @Published var errorMessage: String?
 
     @Published var selectedCategoryId: UUID?
@@ -59,6 +60,14 @@ final class StudySessionViewModel: ObservableObject {
         observeTimer()
         loadCategories()
     }
+
+    func reset() {
+        activeSession = nil
+        selectedCategoryId = nil
+        selectedTimerModeOption = nil
+        timerState = .notStarted
+        isTimerScreenPresented = false
+    }
 }
 
 // MARK: - Observable
@@ -82,12 +91,13 @@ extension StudySessionViewModel {
             let sessionChanges = await worker.activeStudySessionChanges()
             for await session in sessionChanges {
                 activeSession = session
+                isTimerScreenPresented = session != nil
                 syncSelectedCategory(with: session)
             }
         }
     }
     
-    private func observeTimer() {
+    func observeTimer() {
         timerObservationTask?.cancel()
         timerObservationTask = Task { [weak self] in
             guard let self else { return }

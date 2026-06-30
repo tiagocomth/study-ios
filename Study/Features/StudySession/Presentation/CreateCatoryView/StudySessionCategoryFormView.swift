@@ -98,7 +98,7 @@ private struct StudySessionCategoryFormPreviewWorker: StudySessionWorkerProtocol
     func deleteCategory(id: UUID) throws {}
     func loadCategories(onBackendRefresh: @escaping CategoriesRefreshCallback) throws -> [StudyCategory] { [] }
     func getActiveStudySession() async -> LocalStudySession? { nil }
-    func startStudySession(categoryId: UUID) async throws {}
+    func startStudySession(categoryId: UUID, mode: StudySessionTimerMode) async throws { }
     func pauseStudySession() async throws {}
     func resumeStudySession() async throws {}
     func finishStudySession() async throws {}

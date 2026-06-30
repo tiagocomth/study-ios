@@ -34,14 +34,6 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
         await studySessionManager.activeSessionChanges()
     }
 
-    func configureTimer(_ mode: StudySessionTimerMode) async throws {
-        guard let userId = currentUserId() else {
-            throw StudySessionError.missingCurrentUser
-        }
-
-        await timerModeStore.saveMode(mode, userId: userId)
-    }
-
     func timerChanges() async throws -> AsyncStream<StudySessionTimerState> {
         guard let userId = currentUserId() else {
             throw StudySessionError.missingCurrentUser
@@ -85,8 +77,9 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
         await studySessionManager.getActiveSession()
     }
 
-    func startStudySession(categoryId: UUID) async throws { // TODO: Como vai funcionar para a tela saber se tem q aumentar ou diminuir o tempo
+    func startStudySession(categoryId: UUID, mode: StudySessionTimerMode) async throws {
         try await studySessionManager.start(categoryId: categoryId)
+        try await configureTimer(mode)
     }
 
     func pauseStudySession() async throws {
@@ -98,6 +91,16 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
     }
 
     func finishStudySession() async throws {
+        guard let id = currentUserId() else { throw StudySessionError.missingCurrentUser }
         try await studySessionManager.finish()
+        await timerModeStore.clear(userId: id)
+    }
+    
+    private func configureTimer(_ mode: StudySessionTimerMode) async throws {
+        guard let userId = currentUserId() else {
+            throw StudySessionError.missingCurrentUser
+        }
+
+        await timerModeStore.saveMode(mode, userId: userId)
     }
 }

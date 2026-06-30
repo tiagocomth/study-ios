@@ -85,6 +85,7 @@ final class StudySessionManager: StudySessionManagerProtocol {
         Task { [weak self] in
             guard let self else { return }
             await sendRemote(action, userId: userId)
+            await studySessionTracker.clear(userId: userId)
         }
     }
 }

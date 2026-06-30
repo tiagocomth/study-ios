@@ -12,14 +12,8 @@ extension StudySessionViewModel {
     func didTapPrimaryButton() {
         guard canStartTimer else { return }
 
-        switch timerState {
-        case .notStarted, .finished:
-            selectedTimerModeOption = nil
-            isTimerModePickerPresented = true
-        case .running, .paused:
-            // TODO: conectar acoes do footer ao fluxo de sessao em andamento.
-            return
-        }
+        selectedTimerModeOption = nil
+        isTimerModePickerPresented = true
     }
 
     func shouldDisableClick() -> Bool {
@@ -27,18 +21,11 @@ extension StudySessionViewModel {
     }
 
     var canStartTimer: Bool {
-        selectedCategoryId != nil
+        selectedCategoryId != nil && categoryPendingDeletion == nil
     }
 
-    var primaryButtonTitle: String {
-        switch timerState {
-        case .notStarted, .finished:
-            "Iniciar Timer"
-        case .running:
-            "Continuar Timer"
-        case .paused:
-            "Retomar Timer"
-        }
+    var shouldShowTimerScreen: Bool {
+        isTimerScreenPresented
     }
 
     var canConfirmTimerModeSelection: Bool {
@@ -47,6 +34,37 @@ extension StudySessionViewModel {
 
     var canConfirmCountdownDurationSelection: Bool {
         countdownDurationInSeconds >= 300
+    }
+
+    var currentHeaderModeTitle: String {
+        return currentTimerModeOption?.title.replacingOccurrences(of: "\n", with: " ") ?? "Selecione sua matéria"
+    }
+
+    var timerScreenTimerText: String {
+        switch timerState {
+        case .running(let snapshot), .paused(let snapshot), .finished(let snapshot):
+            return formatTimerText(seconds: timerDisplaySeconds(from: snapshot))
+        case .notStarted:
+            return "00:00:00"
+        }
+    }
+
+    var timerScreenTimerValue: Double {
+        switch timerState {
+        case .running(let snapshot), .paused(let snapshot), .finished(let snapshot):
+            return Double(timerDisplaySeconds(from: snapshot))
+        case .notStarted:
+            return 0
+        }
+    }
+
+    var timerToggleSymbolName: String {
+        switch timerState {
+        case .running:
+            "pause.fill"
+        case .paused, .notStarted, .finished:
+            "play.fill"
+        }
     }
 }
 
@@ -71,9 +89,8 @@ extension StudySessionViewModel {
 
         switch selectedTimerModeOption {
         case .stopwatch:
-            // TODO: ligar configuracao e inicio real da sessao para cronometro.
-            self.selectedTimerModeOption = nil
             isTimerModePickerPresented = false
+            startStudySession(with: .stopwatch)
         case .countdown:
             resetCountdownDuration()
             isTimerModePickerPresented = false
@@ -106,8 +123,56 @@ extension StudySessionViewModel {
     func confirmCountdownDurationSelection() {
         guard canConfirmCountdownDurationSelection else { return }
 
-        // TODO: ligar configuracao e inicio real da sessao de estudo com countdown.
         isCountdownDurationPickerPresented = false
+        startStudySession(with: .countdown(durationSeconds: countdownDurationInSeconds))
+    }
+
+    func didTapTimerToggle() {
+        Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                switch timerState {
+                case .running:
+                    try await worker.pauseStudySession()
+                case .paused:
+                    try await worker.resumeStudySession()
+                case .notStarted, .finished:
+                    return
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    func didTapFinishStudySession() {
+        Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                try await worker.finishStudySession()
+                try? await Task.sleep(for: .seconds(3))
+                // TODO: substituir o sleep pela animação de finalizar a sessão.
+                reset()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    func startStudySession(with timerMode: StudySessionTimerMode) {
+        Task { [weak self] in
+            guard let self else { return }
+            guard let selectedCategoryId = self.selectedCategoryId else { return }
+
+            do {
+                try await worker.startStudySession(categoryId: selectedCategoryId, mode: timerMode)
+                observeTimer()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
     }
     
     func makeTimerViewState(from state: StudySessionTimerState) -> TimerViewState {
@@ -156,5 +221,36 @@ extension StudySessionViewModel {
 
         let value = min(Int(truncatedDigits) ?? 0, maximum)
         return String(format: "%02d", value)
+    }
+
+    var currentTimerModeOption: TimerModeOption? {
+        switch timerState {
+        case .running(let snapshot), .paused(let snapshot), .finished(let snapshot):
+            switch snapshot.mode {
+            case .stopwatch:
+                return .stopwatch
+            case .countdown:
+                return .countdown
+            }
+        case .notStarted:
+            return nil
+        }
+    }
+
+    func formatTimerText(seconds: Int) -> String {
+        let hours = seconds / 3600
+        let minutes = (seconds % 3600) / 60
+        let remainingSeconds = seconds % 60
+
+        return String(format: "%02d:%02d:%02d", hours, minutes, remainingSeconds)
+    }
+
+    func timerDisplaySeconds(from snapshot: TimerSnapshot) -> Int {
+        switch snapshot.mode {
+        case .stopwatch:
+            return snapshot.elapsedSeconds
+        case .countdown:
+            return snapshot.remainingSeconds ?? snapshot.elapsedSeconds
+        }
     }
 }

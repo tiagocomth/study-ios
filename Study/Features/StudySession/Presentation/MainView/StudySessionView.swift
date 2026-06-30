@@ -10,12 +10,24 @@ struct StudySessionView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: .zero) {
-            StudySessionHeaderView()
-            
-            StudySessionContentView(viewModel: viewModel)
-            
-            if viewModel.shouldShowPrimaryButton {
-                footerButton
+            StudySessionHeaderView(subTitle: viewModel.currentHeaderModeTitle)
+
+            if viewModel.shouldShowTimerScreen {
+                StudySessionTimerScreenView(
+                    modeTitle: viewModel.currentHeaderModeTitle,
+                    timerText: viewModel.timerScreenTimerText,
+                    timerValue: viewModel.timerScreenTimerValue,
+                    timerToggleSymbolName: viewModel.timerToggleSymbolName,
+                    onToggleTimer: viewModel.didTapTimerToggle,
+                    onFinishStudySession: viewModel.didTapFinishStudySession
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                StudySessionContentView(viewModel: viewModel)
+
+                if viewModel.shouldShowPrimaryButton {
+                    footerButton
+                }
             }
         }
         .padding(GlobalConfiguration.normalPadding)
@@ -49,7 +61,7 @@ private extension StudySessionView {
     
     var footerButton: some View {
         Button(action: viewModel.didTapPrimaryButton) {
-            Text(viewModel.primaryButtonTitle)
+            Text("Iniciar Timer")
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(PrimaryButtonStyle())

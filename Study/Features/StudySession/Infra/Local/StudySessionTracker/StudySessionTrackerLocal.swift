@@ -171,7 +171,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
             throw StudySessionTrackerLocalError.sessionAlreadyFinished
         }
 
-        let endDate = now()
+        let endDate = now() //TODO: Pensar em como vou fazer isso, porque no couchdowmn
 
         var closePauseDTO: ResumeStudySessionDTO?
 
