@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ForgetPasswordView: View {
     @StateObject var viewModel: ForgetPasswordViewModel
+    @FocusState private var isEmailFocused: Bool
     
     var body: some View {
         AuthResponsiveContainer(
@@ -27,9 +28,15 @@ private extension ForgetPasswordView {
             AuthTextField(
                 title: "E-mail",
                 placeholder: "Digite seu e-mail",
-                text: $viewModel.emailValue
+                text: $viewModel.emailValue,
+                isFocused: $isEmailFocused
             )
             .autocorrectionDisabled()
+            .onSubmit {
+                if viewModel.isFormValid && !viewModel.isLoading {
+                    viewModel.recoverPassword()
+                }
+            }
 
             if let error = viewModel.errorMessage {
                 Text(error)

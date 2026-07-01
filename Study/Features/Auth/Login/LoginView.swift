@@ -8,6 +8,8 @@ import SwiftUI
 struct LoginView: View {
     
     @StateObject var viewModel: LoginViewModel
+    @FocusState private var isEmailFocused: Bool
+    @FocusState private var isPasswordFocused: Bool
     
     var body: some View {
         AuthResponsiveContainer(title: "Login", subtitle: nil) {
@@ -30,15 +32,25 @@ private extension LoginView {
             AuthTextField(
                 title: "E-mail",
                 placeholder: "Digite seu e-mail",
-                text: $viewModel.email
+                text: $viewModel.email,
+                isFocused: $isEmailFocused
             )
+            .onSubmit {
+                isPasswordFocused = true
+            }
 
             AuthTextField(
                 title: "Senha",
                 placeholder: "Digite sua senha",
                 isSecure: true,
                 text: $viewModel.password,
+                isFocused: $isPasswordFocused
             )
+            .onSubmit {
+                if viewModel.isFormValid && !viewModel.isLoading {
+                    viewModel.login()
+                }
+            }
 
             HStack {
 

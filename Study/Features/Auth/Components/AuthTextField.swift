@@ -14,6 +14,21 @@ struct AuthTextField: View {
     var isSecure = false
 
     @Binding var text: String
+    var isFocused: FocusState<Bool>.Binding? = nil
+
+    init(
+        title: String,
+        placeholder: String,
+        isSecure: Bool = false,
+        text: Binding<String>,
+        isFocused: FocusState<Bool>.Binding? = nil
+    ) {
+        self.title = title
+        self.placeholder = placeholder
+        self.isSecure = isSecure
+        self._text = text
+        self.isFocused = isFocused
+    }
 
     // Change magic numbers
     var body: some View {
@@ -47,9 +62,19 @@ struct AuthTextField: View {
     @ViewBuilder
     private var field: some View {
         if isSecure {
-            SecureField(placeholder, text: $text)
+            if let isFocused = isFocused {
+                SecureField(placeholder, text: $text)
+                    .focused(isFocused)
+            } else {
+                SecureField(placeholder, text: $text)
+            }
         } else {
-            TextField(placeholder, text: $text)
+            if let isFocused = isFocused {
+                TextField(placeholder, text: $text)
+                    .focused(isFocused)
+            } else {
+                TextField(placeholder, text: $text)
+            }
         }
     }
 }

@@ -7,6 +7,8 @@ import SwiftUI
 
 struct NewPasswordView: View {
     @StateObject var viewModel: NewPasswordViewModel
+    @FocusState private var isPasswordFocused: Bool
+    @FocusState private var isConfirmPasswordFocused: Bool
 
     var body: some View {
         AuthResponsiveContainer(
@@ -29,15 +31,25 @@ private extension NewPasswordView {
                 title: "Senha",
                 placeholder: "Digite sua nova senha",
                 isSecure: true,
-                text: $viewModel.passwordValue
+                text: $viewModel.passwordValue,
+                isFocused: $isPasswordFocused
             )
+            .onSubmit {
+                isConfirmPasswordFocused = true
+            }
 
             AuthTextField(
                 title: "Confirmar senha",
                 placeholder: "Confirme sua nova senha",
                 isSecure: true,
-                text: $viewModel.passwordConfirmationValue
+                text: $viewModel.passwordConfirmationValue,
+                isFocused: $isConfirmPasswordFocused
             )
+            .onSubmit {
+                if viewModel.isFormValid && !viewModel.isLoading {
+                    viewModel.updatePassword()
+                }
+            }
 
             if let error = viewModel.errorMessage {
                 Text(error)
