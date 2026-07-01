@@ -17,6 +17,12 @@ struct StudyApp: App {
         _appWorker = State(initialValue: AppWorker(modelContainer: modelContainer))
     }
 
+    init() {
+        let container = try! ModelContainer(for: StoredStudyCategory.self)
+        _container = .init(initialValue: container)
+        _appWorker = .init(wrappedValue: .init(modelContainer: container))
+    }
+    
     var body: some Scene {
         WindowGroup {
             RootView(appWorker: appWorker)

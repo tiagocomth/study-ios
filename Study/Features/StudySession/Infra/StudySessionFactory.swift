@@ -162,7 +162,7 @@ private extension StudySessionFactory {
         else {
             return false
         }
-
+      
         do {
             try await studySessionManager.finish(endDate: expectedEndDate)
             await timerModeStore.clear(userId: userId)
@@ -173,7 +173,10 @@ private extension StudySessionFactory {
             return false
         }
     }
+}
 
+private extension StudySessionFactory {
+    
     func makeStudySessionViewModel() -> StudySessionViewModel {
         let viewModel = StudySessionViewModel(worker: makeStudySessionWorker())
         viewModel.coordinator = coordinator
