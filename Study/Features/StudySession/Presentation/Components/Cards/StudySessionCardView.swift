@@ -64,7 +64,7 @@ private extension StudySessionCardView {
                 .fontWeight(.semibold)
                 .foregroundStyle(isSelected ? .red : AppColors.neutralBlack)
                 .lineLimit(1)
-                .frame(width: 120)
+                .frame(width: 120, height: 20)
         }
     }
 }

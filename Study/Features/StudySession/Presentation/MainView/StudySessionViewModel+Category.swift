@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 extension StudySessionViewModel {
     func selectCategory(_ categoryId: UUID) {
@@ -13,7 +14,13 @@ extension StudySessionViewModel {
     }
 
     func didTapAddCategory() {
-        coordinator?.presentCreateCategory()
+        guard isCreatingCategoryInline == false else { return }
+
+        dismissEdit()
+        creatingCategoryName = ""
+        withAnimation(.spring) {
+            isCreatingCategoryInline = true
+        }
     }
 
     func isSelected(_ category: StudyCategory) -> Bool {
@@ -99,6 +106,49 @@ extension StudySessionViewModel {
         editingCategoryName = ""
     }
 
+    func submitCreatingCategory() {
+        let trimmedName = creatingCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard trimmedName.isEmpty == false else {
+            discardCreatingCategory()
+            return
+        }
+
+        do {
+            let createdCategory = try worker.createCategory(
+                CreateCategoryDTO(categoryId: .init(), name: trimmedName)
+            )
+            let updatedCategories = categories.filter { $0.categoryId != createdCategory.categoryId } + [createdCategory]
+            handleCategoryUpdate(updatedCategories)
+            creatingCategoryName = ""
+            isCreatingCategoryInline = false
+            selectedCategoryId = createdCategory.categoryId
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func discardCreatingCategory() {
+        creatingCategoryName = ""
+        withAnimation(.spring) {
+            isCreatingCategoryInline = false
+        }
+    }
+
+    func dismissCreateCategoryIfNeeded() {
+        let trimmedName = creatingCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard isCreatingCategoryInline else { return }
+
+        if trimmedName.isEmpty {
+            discardCreatingCategory()
+            return
+        }
+
+        submitCreatingCategory()
+    }
+
     func confirmDeletePendingCategory() {
         guard let categoryPendingDeletion else { return }
 
@@ -182,6 +232,10 @@ extension StudySessionViewModel {
         if let categoryPendingDeletion,
            validCategoryIds.contains(categoryPendingDeletion.categoryId) == false {
             self.categoryPendingDeletion = nil
+        }
+
+        if isCreatingCategoryInline == false {
+            errorMessage = nil
         }
 
         syncSelectedCategory(with: activeSession)

@@ -8,7 +8,6 @@ import Combine
 
 @MainActor
 final class StudySessionViewModel: ObservableObject {
-    weak var coordinator: StudySessionCoordinatorProtocol?
     let worker: StudySessionWorkerProtocol
     private var hasStarted = false
     var isFinishingStudySession = false
@@ -29,6 +28,8 @@ final class StudySessionViewModel: ObservableObject {
     @Published var actionMenuCategoryId: UUID?
     @Published var editingCategoryId: UUID?
     @Published var categoryPendingDeletion: StudyCategory?
+    @Published var creatingCategoryName: String = ""
+    @Published var isCreatingCategoryInline = false
     @Published var isTimerModePickerPresented = false
     @Published var isCountdownDurationPickerPresented = false
     @Published var selectedTimerModeOption: TimerModeOption?

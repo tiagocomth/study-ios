@@ -17,7 +17,7 @@ extension StudySessionViewModel {
     }
 
     func shouldDisableClick() -> Bool {
-        categoryPendingDeletion != nil || isTimerModePickerPresented || isCountdownDurationPickerPresented
+        categoryPendingDeletion != nil || isTimerModePickerPresented || isCountdownDurationPickerPresented || isCreatingCategoryInline
     }
 
     var canStartTimer: Bool {

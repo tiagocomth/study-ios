@@ -9,7 +9,7 @@ import SwiftUI
 
 struct StudySessionCategoryGridView: View {
     @ObservedObject var viewModel: StudySessionViewModel
-
+    
     var body: some View {
         ScrollView {
             LazyVGrid(
@@ -21,10 +21,16 @@ struct StudySessionCategoryGridView: View {
                     cardView(for: category)
                 }
                 
+                if viewModel.isCreatingCategoryInline {
+                    createCardView
+                        .transition(.opacity)
+                }
+                
                 StudySessionAddCardView(action: viewModel.didTapAddCategory)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(.spring, value: viewModel.isCreatingCategoryInline)
         }
         .scrollIndicators(.hidden)
     }
@@ -32,22 +38,30 @@ struct StudySessionCategoryGridView: View {
 
 private extension StudySessionCategoryGridView {
     func cardView(for category: StudyCategory) -> some View {
-        VStack {
-            StudySessionCategoryCardView(
-                isActionMenuPresented: Binding(
-                    get: { viewModel.isActionMenuPresented(for: category) },
-                    set: { viewModel.setActionMenuPresented($0, for: category) }
-                ),
-                editingName: $viewModel.editingCategoryName,
-                categoryName: category.name,
-                isSelected: viewModel.isSelected(category),
-                isEditing: viewModel.isEditing(category),
-                onSelect: { viewModel.selectCategory(category.categoryId) },
-                onEdit: { viewModel.beginEditing(category) },
-                onDelete: { viewModel.requestDeleteCategory(category) },
-                onSubmitEditing: { viewModel.commitEditing(for: category) }
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        }
+        StudySessionCategoryCardView(
+            isActionMenuPresented: Binding(
+                get: { viewModel.isActionMenuPresented(for: category) },
+                set: { viewModel.setActionMenuPresented($0, for: category) }
+            ),
+            editingName: $viewModel.editingCategoryName,
+            categoryName: category.name,
+            isSelected: viewModel.isSelected(category),
+            isEditing: viewModel.isEditing(category),
+            onSelect: { viewModel.selectCategory(category.categoryId) },
+            onEdit: { viewModel.beginEditing(category) },
+            onDelete: { viewModel.requestDeleteCategory(category) },
+            onSubmitEditing: { viewModel.commitEditing(for: category) }
+        )
+    }
+    
+    var createCardView: some View {
+        StudySessionCardView(
+            editingName: $viewModel.creatingCategoryName,
+            categoryName: "",
+            isEditing: true,
+            isSelected: false,
+            action: {},
+            onSubmitEditing: viewModel.submitCreatingCategory
+        )
     }
 }

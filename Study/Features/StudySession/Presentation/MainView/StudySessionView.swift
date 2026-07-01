@@ -37,6 +37,7 @@ struct StudySessionView: View {
         .onTapGesture {
             viewModel.dismissDeleteCategory()
             viewModel.dismissEdit()
+            viewModel.dismissCreateCategoryIfNeeded()
             viewModel.dismissTimerOverlays()
         }
         .overlay {
