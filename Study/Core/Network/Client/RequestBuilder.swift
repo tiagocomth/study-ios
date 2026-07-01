@@ -25,7 +25,8 @@ struct RequestBuilder {
     /// Behavior:
     /// - Uses the `https` scheme by default.
     /// - Sets a `timeoutInterval` of 30s.
-    /// - Sets `Content-Type` and `Accept` to `application/json`.
+    /// - Sets `Accept` to `application/json`.
+    /// - Sets `Content-Type` to `application/json` only for `requestJSONBody`.
     /// - `requestPlain`: sets `Content-Length` to `0`.
     /// - `requestURLParameters`: converts the dictionary into `queryItems`.
     /// - `requestJSONBody`: encodes the body using `JSONEncoder`.
@@ -69,6 +70,7 @@ struct RequestBuilder {
         case .requestJSONBody(let body):
             // Serialize body as JSON
             let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
             do {
                 urlRequest.httpBody = try encoder.encode(body)
             } catch {
@@ -76,8 +78,10 @@ struct RequestBuilder {
             }
         }
 
-        // Default headers for JSON
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // `Content-Type` should only describe an actual request body payload.
+        if case .requestJSONBody = from.task {
+            urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
         urlRequest.setValue("application/json", forHTTPHeaderField: "Accept")
 
         // Authorization (only when a non-empty token is available)

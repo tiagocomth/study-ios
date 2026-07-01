@@ -12,9 +12,9 @@ enum PaymentPurchaseResult: Sendable, Equatable {
 }
 
 enum PaymentEvent: Sendable, Equatable {
-    case purchased(product: ProductIdentifier, transactionJSON: Data)
-    case revoked(product: ProductIdentifier, transactionJSON: Data)
-    case expired(product: ProductIdentifier, transactionJSON: Data)
+    case purchased(product: ProductIdentifier, jwsRepresentation: String)
+    case revoked(product: ProductIdentifier, jwsRepresentation: String)
+    case expired(product: ProductIdentifier, jwsRepresentation: String)
     case pending(ProductIdentifier)
     case failed(ProductIdentifier?, PaymentError)
 }
@@ -22,14 +22,14 @@ enum PaymentEvent: Sendable, Equatable {
 extension PaymentEvent {
     var logDescription: String {
         switch self {
-        case .purchased(let product, let transactionJSON):
-            return "purchased(\(product.id), transactionJSONBytes: \(transactionJSON.count))"
+        case .purchased(let product, let jwsRepresentation):
+            return "purchased(\(product.id), jwsLength: \(jwsRepresentation.count))"
 
-        case .revoked(let product, let transactionJSON):
-            return "revoked(\(product.id), transactionJSONBytes: \(transactionJSON.count))"
+        case .revoked(let product, let jwsRepresentation):
+            return "revoked(\(product.id), jwsLength: \(jwsRepresentation.count))"
 
-        case .expired(let product, let transactionJSON):
-            return "expired(\(product.id), transactionJSONBytes: \(transactionJSON.count))"
+        case .expired(let product, let jwsRepresentation):
+            return "expired(\(product.id), jwsLength: \(jwsRepresentation.count))"
 
         case .pending(let identifier):
             return "pending(\(identifier.id))"

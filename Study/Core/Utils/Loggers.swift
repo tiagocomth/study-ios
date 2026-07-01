@@ -7,7 +7,7 @@ import Foundation
 import os
 
 /// Abstraction over a domain logger so call sites can inject a fake in tests.
-protocol DomainLogging: Sendable {
+nonisolated protocol DomainLogging: Sendable {
     func debug(_ message: String)
     func info(_ message: String)
     func error(_ message: String)
@@ -49,4 +49,24 @@ final class AuthLogger: DomainLogger, @unchecked Sendable {
 
 final class PaymentLogger: DomainLogger, @unchecked Sendable {
     init() { super.init(category: "Payment") }
+}
+
+final class ConnectivityLogger: DomainLogger, @unchecked Sendable {
+    init() { super.init(category: "Connectivity") }
+}
+
+final class AppLifecycleLogger: DomainLogger, @unchecked Sendable {
+    init() { super.init(category: "AppLifecycle") }
+}
+
+final class CategoryLogger: DomainLogger, @unchecked Sendable {
+    init() { super.init(category: "Category") }
+}
+
+final class StudySessionTrackerLogger: DomainLogger, @unchecked Sendable {
+    init() { super.init(category: "StudySessionTracker") }
+}
+
+final class OfflineOperationQueueLogger: DomainLogger, @unchecked Sendable {
+    init() { super.init(category: "OfflineOperationQueue") }
 }
