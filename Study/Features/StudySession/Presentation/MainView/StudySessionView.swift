@@ -70,6 +70,7 @@ private extension StudySessionView {
         .disabled(!viewModel.canStartTimer)
         .frame(maxWidth: 320)
         .frame(maxWidth: .infinity)
+        .disabled(viewModel.isCreatingCategoryInline)
         .opacity(viewModel.isTimerModePickerPresented || viewModel.isCountdownDurationPickerPresented ? 0 : 1)
     }
     

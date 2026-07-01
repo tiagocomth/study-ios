@@ -19,6 +19,7 @@ struct StudySessionCategoryGridView: View {
             ) {
                 ForEach(viewModel.categories, id: \.categoryId) { category in
                     cardView(for: category)
+                        .disabled(viewModel.isCreatingCategoryInline)
                 }
                 
                 if viewModel.isCreatingCategoryInline {
@@ -27,6 +28,7 @@ struct StudySessionCategoryGridView: View {
                 }
                 
                 StudySessionAddCardView(action: viewModel.didTapAddCategory)
+                    .disabled(viewModel.isCreatingCategoryInline)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
