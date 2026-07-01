@@ -25,7 +25,6 @@ struct StudySessionCategoryGridView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
         }
         .scrollIndicators(.hidden)
     }

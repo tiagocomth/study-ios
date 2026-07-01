@@ -11,6 +11,7 @@ struct StudySessionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: .zero) {
             StudySessionHeaderView(subTitle: viewModel.currentHeaderModeTitle)
+                .padding(GlobalConfiguration.largePadding)
 
             if viewModel.shouldShowTimerScreen {
                 StudySessionTimerScreenView(

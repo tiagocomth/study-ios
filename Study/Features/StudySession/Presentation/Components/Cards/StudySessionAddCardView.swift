@@ -17,14 +17,14 @@ struct StudySessionAddCardView: View {
                 .overlay {
                     RoundedRectangle(cornerRadius: AppRadius.small)
                         .stroke()
-                        .foregroundStyle(.neutralColorblack)
+                        .foregroundStyle(AppColors.neutralBlack)
                 }
                 .overlay {
                     Image(systemName: "plus")
                         .resizable()
                         .scaledToFit()
-                        .padding()
-                        .foregroundStyle(.neutralColorblack)
+                        .foregroundStyle(AppColors.neutralBlack)
+                        .frame(maxWidth: 25, maxHeight: 25)
                 }
         }
         .buttonStyle(.studyStyle)
