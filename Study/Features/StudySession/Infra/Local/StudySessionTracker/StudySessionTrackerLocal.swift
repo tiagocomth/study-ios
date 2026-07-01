@@ -53,6 +53,12 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         activeSessionsByUser[userId]
     }
 
+    func save(_ session: LocalStudySession, userId: UUID) async throws(StudySessionTrackerLocalError) {
+        try await persist(session, userId: userId)
+        emitSessionChanges(for: userId)
+        logger.info("Saved active study session \(session.sessionId.uuidString)")
+    }
+
     func restoreState(for userId: UUID) -> RestoreState {
         restoreStatesByUser[userId] ?? .notStarted
     }
@@ -285,6 +291,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
             }
             userDefaults.set(data, forKey: key(for: userId))
             activeSessionsByUser[userId] = session
+            restoreStatesByUser[userId] = .restored
         } catch {
             logger.error("Failed to persist study session \(session.sessionId.uuidString): \(error.localizedDescription)")
             throw StudySessionTrackerLocalError.failedToPersistSession

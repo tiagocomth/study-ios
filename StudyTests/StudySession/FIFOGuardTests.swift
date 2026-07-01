@@ -22,18 +22,18 @@ struct FIFOGuardTests {
             categoryLocal: categoryLocal,
             operationManager: operationManager,
             currentUserId: { userId },
-            makeId: { UUID(uuidString: "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA")! },
             now: { Date(timeIntervalSince1970: 1_719_324_800) }
         )
 
-        let created = try manager.create(CreateCategoryDTO(name: "Math"))
+        let id = UUID()
+        let created = try manager.create(CreateCategoryDTO(categoryId: id, name: "Math"))
         await settleBackgroundWork()
 
         #expect(created.name == "Math")
         #expect(await categoryAPI.createCallCount == 0)
         #expect(categoryLocal.savedCategories.count == 1)
         #expect(await operationManager.dispatchedKinds == [
-            .createCategory(CreateCategoryDTO(name: "Math"))
+            .createCategory(CreateCategoryDTO(categoryId: id, name: "Math"))
         ])
         #expect(await operationManager.enqueuedKinds.isEmpty)
     }
@@ -197,6 +197,7 @@ private struct StudySessionTrackerLocalSpy: StudySessionTrackerLocalProtocol {
     func restoreState(for userId: UUID) async -> RestoreState { .restored }
     func ensureRestored(userId: UUID) async {}
     func getActiveSession(userId: UUID) async -> LocalStudySession? { nil }
+    func save(_ session: LocalStudySession, userId: UUID) async throws(StudySessionTrackerLocalError) {}
 
     func start(
         categoryId: UUID,
@@ -239,6 +240,7 @@ private actor StudySessionRemoteSpy: StudySessionAPIProtocol {
     var resumeCallCount = 0
     var finishCallCount = 0
 
+    func last() async throws(NetworkError) -> StudySessionDTO? { nil }
     func start(_ dto: StartStudySessionDTO) async throws(NetworkError) { startCallCount += 1 }
     func pause(id: UUID, dto: PauseStudySessionDTO) async throws(NetworkError) {}
     func resume(id: UUID, dto: ResumeStudySessionDTO) async throws(NetworkError) { resumeCallCount += 1 }

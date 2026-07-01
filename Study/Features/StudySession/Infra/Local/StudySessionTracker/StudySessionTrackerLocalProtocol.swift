@@ -10,6 +10,7 @@ nonisolated protocol StudySessionTrackerLocalProtocol {
     func restoreState(for userId: UUID) async -> RestoreState
     func ensureRestored(userId: UUID) async
     func getActiveSession(userId: UUID) async -> LocalStudySession?
+    func save(_ session: LocalStudySession, userId: UUID) async throws(StudySessionTrackerLocalError)
     func start(categoryId: UUID, userId: UUID, mode: StudySessionTimerMode) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction
     func pause(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction
     func resume(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction

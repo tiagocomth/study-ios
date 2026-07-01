@@ -54,6 +54,19 @@ struct RequestBuilderTests {
         #expect(try JSONDecoder().decode(TestUser.self, from: body) == TestUser(id: "1", name: "Tiago"))
     }
 
+    @Test("encodes dates as ISO8601 strings")
+    func encodesDatesAsISO8601() throws {
+        let endpoint = TestEndpoint(
+            method: .post,
+            task: .requestJSONBody(TestDateBody(startDate: Date(timeIntervalSince1970: 0)))
+        )
+        let request = try #require(RequestBuilder.build(endpoint))
+        let body = try #require(request.httpBody)
+        let json = try #require(JSONSerialization.jsonObject(with: body) as? [String: Any])
+
+        #expect(json["startDate"] as? String == "1970-01-01T00:00:00Z")
+    }
+
     @Test("encodes URL query parameters")
     func encodesQueryParameters() throws {
         let endpoint = TestEndpoint(task: .requestURLParameters(["page": 2]))
@@ -67,4 +80,8 @@ struct RequestBuilderTests {
         let request = try #require(RequestBuilder.build(endpoint))
         #expect(request.value(forHTTPHeaderField: "X-Custom") == "value")
     }
+}
+
+private struct TestDateBody: Codable {
+    let startDate: Date
 }

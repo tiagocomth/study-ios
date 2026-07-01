@@ -71,7 +71,7 @@ struct StudySessionTrackerLocalTests {
         var currentDate = now
         let tracker = StudySessionTrackerLocal(
             userDefaults: makeUserDefaults(),
-            now: { currentDate },
+            now: { now },
             makeId: { UUID() }
         )
 

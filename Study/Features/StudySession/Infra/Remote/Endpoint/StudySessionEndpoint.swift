@@ -6,7 +6,7 @@
 import Foundation
 
 enum StudySessionEndpoint: Endpoint {
-    case getStudySessions
+    case lastStudySession
     case startStudySession(StartStudySessionDTO)
     case pauseStudySession(id: UUID, dto: PauseStudySessionDTO)
     case resumeStudySession(id: UUID, dto: ResumeStudySessionDTO)
@@ -21,8 +21,8 @@ enum StudySessionEndpoint: Endpoint {
 
     var path: String {
         switch self {
-        case .getStudySessions:
-            "/sessions"
+        case .lastStudySession:
+            "/sessions/last"
         case .startStudySession:
             "/sessions/start"
         case .pauseStudySession(let id, _):
@@ -44,7 +44,7 @@ enum StudySessionEndpoint: Endpoint {
 
     var method: HTTPMethod {
         switch self {
-        case .getStudySessions, .getCategories, .getCategoryById:
+        case .lastStudySession, .getCategories, .getCategoryById:
             .get
         case .startStudySession, .pauseStudySession, .createCategory:
             .post
@@ -57,7 +57,7 @@ enum StudySessionEndpoint: Endpoint {
 
     var task: HTTPTask {
         switch self {
-        case .getStudySessions, .getCategories, .getCategoryById, .deleteStudySession, .deleteCategory:
+        case .lastStudySession, .getCategories, .getCategoryById, .deleteStudySession, .deleteCategory:
             .requestPlain
         case .startStudySession(let dto):
             .requestJSONBody(dto)

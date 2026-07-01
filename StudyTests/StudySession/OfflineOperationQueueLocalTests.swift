@@ -71,7 +71,7 @@ struct OfflineOperationQueueLocalTests {
             createdAt: now,
             lastAttemptAt: nil,
             attemptCount: 0,
-            kind: .createCategory(CreateCategoryDTO(name: name))
+            kind: .createCategory(CreateCategoryDTO(categoryId: .init(), name: name))
         )
     }
 }

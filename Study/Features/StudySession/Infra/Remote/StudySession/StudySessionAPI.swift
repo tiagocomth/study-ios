@@ -17,6 +17,21 @@ final class StudySessionAPI: StudySessionAPIProtocol {
         self.logger = logger
     }
 
+    func last() async throws(NetworkError) -> StudySessionDTO? {
+        logger.info("Sending last study session fetch request")
+
+        do {
+            return try await apiClient.request(StudySessionEndpoint.lastStudySession)
+        } catch {
+            switch error {
+            case .notFound, .emptyData:
+                return nil
+            default:
+                throw error
+            }
+        }
+    }
+
     func start(_ dto: StartStudySessionDTO) async throws(NetworkError) {
         logger.info("Sending study session start \(dto.sessionId.uuidString)")
         let _: EmptyResponse = try await apiClient.request(StudySessionEndpoint.startStudySession(dto))

@@ -17,6 +17,7 @@ final class StudySessionFactory {
     private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
     private let operationSyncService: OperationSyncServiceProtocol
     private let categorySyncService: CategorySyncServiceProtocol
+    private let studySessionSyncService: StudySessionSyncServiceProtocol
     private let timerModeStore: StudySessionTimerModeStoreLocalProtocol
     private let timerService: StudySessionTimerServiceProtocol
     private let categoryManager: CategoryManagerProtocol
@@ -60,6 +61,11 @@ final class StudySessionFactory {
             categoryLocal: categoryLocal,
             offlineOperationQueue: offlineOperationQueue
         )
+        let studySessionSyncService = StudySessionSyncService(
+            studySessionAPI: studySessionAPI,
+            studySessionTracker: studySessionTracker,
+            offlineOperationQueue: offlineOperationQueue
+        )
         let timerModeStore = StudySessionTimerModeStoreLocal()
         let timerService = StudySessionTimerService(now: now)
         let categoryManager = CategoryManager(
@@ -81,6 +87,7 @@ final class StudySessionFactory {
         self.offlineOperationQueue = offlineOperationQueue
         self.operationSyncService = operationSyncService
         self.categorySyncService = categorySyncService
+        self.studySessionSyncService = studySessionSyncService
         self.timerModeStore = timerModeStore
         self.timerService = timerService
         self.categoryManager = categoryManager
@@ -109,7 +116,7 @@ final class StudySessionFactory {
         do {
             await restoreLocalState()
             let result = try await operationSyncService.sync()
-            try await handleOperationSyncResult(result)
+            await handleSyncResult(result)
         } catch {
             OfflineOperationQueueLogger().error("Failed to sync study session operations: \(error.localizedDescription)")
         }
@@ -189,15 +196,36 @@ private extension StudySessionFactory {
         )
     }
 
-    func handleOperationSyncResult(_ result: OperationSyncResult) async throws {
+    func handleSyncResult(_ result: OperationSyncResult) async {
         switch result {
         case .completed:
             guard let userId = userSession.currentUserId else { return }
-            try await categorySyncService.refreshFromBackendIfQueueIsEmpty(userId: userId)
+            await refreshBackendState(userId: userId)
         case .stoppedOnFailure:
             OfflineOperationQueueLogger().info("Study session operation sync stopped after a retryable failure")
         case .alreadyRunning:
             OfflineOperationQueueLogger().debug("Study session operation sync skipped because a sync is already running")
+        }
+    }
+
+    private func refreshBackendState(userId: UUID) async {
+        await refreshCategories(userId: userId)
+        await refreshActiveSession(userId: userId)
+    }
+
+    private func refreshCategories(userId: UUID) async {
+        do {
+            try await categorySyncService.refreshFromBackendIfQueueIsEmpty(userId: userId)
+        } catch {
+            OfflineOperationQueueLogger().error("Failed to refresh categories from backend: \(error.localizedDescription)")
+        }
+    }
+
+    private func refreshActiveSession(userId: UUID) async {
+        do {
+            try await studySessionSyncService.refreshFromBackendIfQueueIsEmpty(userId: userId)
+        } catch {
+            OfflineOperationQueueLogger().error("Failed to refresh active study session from backend: \(error.localizedDescription)")
         }
     }
 }
