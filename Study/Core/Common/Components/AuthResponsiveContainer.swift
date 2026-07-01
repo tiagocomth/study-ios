@@ -8,7 +8,7 @@ import SwiftUI
 struct AuthResponsiveContainer<Content: View>: View {
     let title: String
     let subtitle: String?
-    var isHeaderCentered: Bool = false
+    var isHeaderCentered: Bool = true
     var onBack: (() -> Void)? = nil
     @ViewBuilder let content: () -> Content
 
