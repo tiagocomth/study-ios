@@ -155,16 +155,19 @@ final class CategoryStoreLocal: CategoryStoreLocalProtocol {
 
 private extension CategoryStoreLocal {
     func fetchAllStoredCategories(userId: UUID) throws -> [StoredStudyCategory] {
+        let localUserId = userId
         let descriptor = FetchDescriptor<StoredStudyCategory>(
-            predicate: #Predicate { $0.userId == userId },
+            predicate: #Predicate { $0.userId == localUserId },
             sortBy: [SortDescriptor(\.createdAt)]
         )
         return try context.fetch(descriptor)
     }
 
     func fetchStoredCategory(id: UUID, userId: UUID) throws -> StoredStudyCategory? {
+        let localId = id
+        let localUserId = userId
         let descriptor = FetchDescriptor<StoredStudyCategory>(
-            predicate: #Predicate { $0.categoryId == id && $0.userId == userId }
+            predicate: #Predicate { $0.categoryId == localId && $0.userId == localUserId }
         )
         return try context.fetch(descriptor).first
     }

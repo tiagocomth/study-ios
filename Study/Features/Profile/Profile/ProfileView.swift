@@ -10,7 +10,11 @@ struct ProfileView: View {
     @StateObject var viewModel: ProfileViewModel
 
     var body: some View {
-        // TODO: UI
-        EmptyView()
+        VStack {
+            Button("Mostrar Premium") {
+                viewModel.presentPremium()
+            }
+            .buttonStyle(.borderedProminent)
+        }
     }
 }

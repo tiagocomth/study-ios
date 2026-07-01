@@ -95,10 +95,42 @@ private extension AppWorker {
     
     private func configurePayments() {
         let paymentTask = Task {
-            await paymentService.startTransactionListener { [paymentLogger] event in
+            await paymentService.startTransactionListener { [paymentLogger, weak self] event in
                 paymentLogger.info("App received payment event: \(event.logDescription)")
-                // TODO: implementar o uso do event
                 
+                guard let self else { return }
+                
+                switch event {
+                case .purchased(_, let jwsString):
+                    do {
+                        let response: VerifyAppleTransactionResponse = try await self.apiClient.request(
+                            PaymentEndpoint.verifyTransaction(signedTransactionInfo: jwsString)
+                        )
+                        
+                        if response.success {
+                            paymentLogger.info("Backend verified transaction successfully. User is premium: \(response.isPremium)")
+                            await MainActor.run {
+                                if let currentUser = self.userSessionService.currentUser {
+                                    let updatedUser = User(
+                                        id: currentUser.id,
+                                        name: currentUser.name,
+                                        isPremium: response.isPremium,
+                                        photo: currentUser.photo,
+                                        individualHoursTotal: currentUser.individualHoursTotal,
+                                        groupHoursTotal: currentUser.groupHoursTotal
+                                    )
+                                    self.userSessionService.update(user: updatedUser)
+                                }
+                            }
+                        } else {
+                            paymentLogger.error("Backend returned success = false for verification.")
+                        }
+                    } catch {
+                        paymentLogger.error("Failed to verify transaction with backend: \(error.localizedDescription)")
+                    }
+                default:
+                    break
+                }
             }
 
             await paymentService.refreshEntitlements()
