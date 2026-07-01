@@ -9,41 +9,18 @@ struct ForgetPasswordView: View {
     @StateObject var viewModel: ForgetPasswordViewModel
     
     var body: some View {
-        HStack() {
-            leftPanel
-            
-            Divider()
-            
-            rightPanel
-            
+        AuthResponsiveContainer(
+            title: "Esqueci Senha",
+            subtitle: nil,
+            onBack: { viewModel.coordinator?.navigateBack() }
+        ) {
+            forgetPasswordForm
         }
         .navigationTitle("Esqueci Senha")
     }
 }
 
 private extension ForgetPasswordView {
-
-    var leftPanel: some View {
-        Image("login")
-            .resizable()
-            .scaledToFill()
-            .clipped()
-    }
-
-    var rightPanel: some View {
-        VStack(spacing: 30) {
-            Spacer()
-
-            Text("Esqueci Senha")
-                .font(.largeTitle.bold())
-
-            forgetPasswordForm
-
-            Spacer()
-        }
-        .frame(maxWidth: 420)
-        .padding(60)
-    }
 
     var forgetPasswordForm: some View {
         VStack(alignment: .leading, spacing: 20) {

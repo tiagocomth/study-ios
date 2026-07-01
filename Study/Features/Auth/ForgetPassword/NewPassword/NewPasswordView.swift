@@ -9,49 +9,19 @@ struct NewPasswordView: View {
     @StateObject var viewModel: NewPasswordViewModel
 
     var body: some View {
-        HStack(spacing: 0) {
-            leftPanel
-
-            Divider()
-
-            rightPanel
+        AuthResponsiveContainer(
+            title: "Esqueci Senha",
+            subtitle: "Crie uma nova senha segura para sua conta.",
+            isHeaderCentered: true,
+            onBack: { viewModel.coordinator?.navigateBack() }
+        ) {
+            newPasswordForm
         }
         .navigationTitle("Nova senha")
     }
 }
 
 private extension NewPasswordView {
-
-    var leftPanel: some View {
-        Image("login")
-            .resizable()
-            .scaledToFill()
-            .frame(maxWidth: .infinity)
-            .clipped()
-    }
-
-    var rightPanel: some View {
-        VStack(spacing: 30) {
-            Spacer()
-
-            VStack(alignment: .center, spacing: 10) {
-                Text("Esqueci Senha")
-                    .font(.largeTitle.bold())
-                    .foregroundStyle(.primary)
-
-                Text("Crie uma nova senha segura para sua conta.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            newPasswordForm
-
-            Spacer()
-        }
-        .frame(maxWidth: 420)
-        .padding(60)
-        .frame(maxWidth: .infinity)
-    }
 
     var newPasswordForm: some View {
         VStack(alignment: .leading, spacing: 20) {

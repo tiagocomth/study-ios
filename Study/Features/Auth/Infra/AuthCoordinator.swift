@@ -42,7 +42,7 @@ final class AuthCoordinator: Coordinator {
         navigationController.presentSheet(router: route)
     }
     
-    private func navigateBack() {
+    func navigateBack() {
         navigationController.pop()
     }
     
@@ -92,4 +92,6 @@ extension AuthCoordinator: RegisterCoordinatorProtocol {
         navigateTo(route: .emailValidate(email: email))
     }
 }
+
+extension AuthCoordinator: EmailValidationCoordinatorProtocol {}
 

@@ -36,7 +36,14 @@ struct RequestBuilder {
         // Build URL from scheme, host and path provided by the endpoint
         var components = URLComponents()
         components.scheme = "https"
-        components.host = from.baseURL
+        
+        let hostParts = from.baseURL.split(separator: ":")
+        if hostParts.count == 2, let port = Int(hostParts[1]) {
+            components.host = String(hostParts[0])
+            components.port = port
+        } else {
+            components.host = from.baseURL
+        }
         components.path = from.path
 
         // Ensure the URL is valid; otherwise, fail gracefully

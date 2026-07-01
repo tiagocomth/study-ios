@@ -10,13 +10,13 @@ struct EmailValidationView: View {
     @FocusState private var isCodeFieldFocused: Bool
     
     var body: some View {
-        HStack(spacing: 0) {
-            leftPanel
-            
-            Divider()
-            
-            rightPanel
-            
+        AuthResponsiveContainer(
+            title: "Acabamos de enviar um código para o seu email",
+            subtitle: "Confirme sua identidade",
+            isHeaderCentered: true,
+            onBack: { viewModel.navigateBack() }
+        ) {
+            validationForm
         }
         .navigationTitle("Validar E-mail")
         .onAppear { isCodeFieldFocused = true }
@@ -24,38 +24,6 @@ struct EmailValidationView: View {
 }
 
 private extension EmailValidationView {
-
-    var leftPanel: some View {
-        Image("login")
-            .resizable()
-            .scaledToFill()
-            .frame(maxWidth: .infinity)
-            .clipped()
-    }
-
-    var rightPanel: some View {
-        VStack(spacing: 30) {
-            Spacer()
-
-            VStack(alignment: .center, spacing: 30) {
-                Text("Acabamos de enviar um código para o seu email")
-                    .font(.largeTitle.bold())
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.primary)
-
-                Text("Confirme sua identidade")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            validationForm
-
-            Spacer()
-        }
-        .frame(maxWidth: 420)
-        .padding(60)
-        .frame(maxWidth: .infinity)
-    }
 
     var validationForm: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -132,29 +100,5 @@ private extension EmailValidationView {
                     .stroke(isActive ? Color.accentColor : Color.adaptiveSeparator, lineWidth: isActive ? 2 : 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-}
-
-#if canImport(UIKit)
-import UIKit
-#else
-import AppKit
-#endif
-
-private extension Color {
-    static var adaptiveTextFieldBackground: Color {
-        #if canImport(UIKit)
-        return Color(uiColor: .secondarySystemBackground)
-        #else
-        return Color(nsColor: .controlBackgroundColor)
-        #endif
-    }
-
-    static var adaptiveSeparator: Color {
-        #if canImport(UIKit)
-        return Color(uiColor: .separator)
-        #else
-        return Color(nsColor: .separatorColor)
-        #endif
     }
 }

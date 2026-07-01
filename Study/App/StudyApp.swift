@@ -13,6 +13,7 @@ struct StudyApp: App {
     var body: some Scene {
         WindowGroup {
             RootView(appWorker: appWorker)
+                .frame(minWidth: 800, minHeight: 600)
         }
     }
 }

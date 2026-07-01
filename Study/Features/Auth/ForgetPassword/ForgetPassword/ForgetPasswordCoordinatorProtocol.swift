@@ -9,4 +9,5 @@ import Foundation
 
 protocol ForgetPasswordCoordinatorProtocol: AnyObject {
     func navigateToCode(email: Email)
+    func navigateBack()
 }

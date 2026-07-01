@@ -9,40 +9,18 @@ struct RegisterView: View {
     @StateObject var viewModel: RegisterViewModel
     
     var body: some View {
-        HStack(spacing: 0) {
-            leftPanel
-            
-            Divider()
-            
-            rightPanel
+        AuthResponsiveContainer(
+            title: "Criar conta",
+            subtitle: nil,
+            onBack: { viewModel.coordinator?.navigateBack() }
+        ) {
+            registerForm
         }
         .navigationTitle("Cadastro")
     }
 }
 
 private extension RegisterView {
-
-    var leftPanel: some View {
-        Image("login")
-            .resizable()
-            .scaledToFill()
-            .clipped()
-    }
-
-    var rightPanel: some View {
-        VStack(spacing: 30) {
-            Spacer()
-
-            Text("Criar conta")
-                .font(.largeTitle.bold())
-
-            registerForm
-
-            Spacer()
-        }
-        .frame(maxWidth: 420)
-        .padding(60)
-    }
 
     var registerForm: some View {
         VStack(alignment: .leading, spacing: 20) {

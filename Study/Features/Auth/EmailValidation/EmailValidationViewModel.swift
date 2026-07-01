@@ -22,11 +22,16 @@ final class EmailValidationViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     let email: Email
+    weak var coordinator: EmailValidationCoordinatorProtocol?
     private let worker: EmailValidationWorkerProtocol
 
     init(email: Email, worker: EmailValidationWorkerProtocol) {
         self.email = email
         self.worker = worker
+    }
+
+    func navigateBack() {
+        coordinator?.navigateBack()
     }
 
     /// Habilita o botão — regra (código válido) definida pelo Worker.
