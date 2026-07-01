@@ -58,27 +58,18 @@ extension StudySessionViewModel {
             editingCategoryName = ""
         }
 
-        guard let validatedName = didSubmitEditCategory(id: category.categoryId, name: editingCategoryName) else {
-            return
-        }
-
-        guard validatedName != category.name else { return }
-
-        guard let index = categories.firstIndex(where: { $0.categoryId == category.categoryId }) else {
-            return
-        }
-        
-        let updatedCategory = StudyCategory(
-            categoryId: category.categoryId,
-            userId: category.userId,
-            name: validatedName,
-            createdAt: category.createdAt
-        )
-        
-        categories[index] = updatedCategory
-
         do {
-            _ = try worker.updateCategory(id: category.categoryId, dto: UpdateCategoryDTO(name: validatedName))
+            guard let updatedCategory = try worker.updateCategory(category, name: editingCategoryName) else {
+                errorMessage = nil
+                return
+            }
+
+            guard let index = categories.firstIndex(where: { $0.categoryId == category.categoryId }) else {
+                return
+            }
+
+            categories[index] = updatedCategory
+            errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -115,9 +106,7 @@ extension StudySessionViewModel {
         }
 
         do {
-            let createdCategory = try worker.createCategory(
-                CreateCategoryDTO(categoryId: .init(), name: trimmedName)
-            )
+            let createdCategory = try worker.createCategory(named: trimmedName)
             let updatedCategories = categories.filter { $0.categoryId != createdCategory.categoryId } + [createdCategory]
             handleCategoryUpdate(updatedCategories)
             creatingCategoryName = ""
@@ -177,20 +166,6 @@ extension StudySessionViewModel {
         }
 
         selectedCategoryId = session.categoryId
-    }
-
-    func didSubmitEditCategory(id: UUID, name: String) -> String? {
-        let validatedName: String
-
-        do {
-            validatedName = try worker.validateCategoryName(name)
-            errorMessage = nil
-        } catch {
-            errorMessage = error.localizedDescription
-            return nil
-        }
-
-        return validatedName
     }
 
     func didConfirmDeleteCategory(id: UUID) {

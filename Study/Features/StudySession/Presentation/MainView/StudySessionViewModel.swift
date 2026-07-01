@@ -5,37 +5,43 @@
 
 import Foundation
 import Combine
+import SwiftUI
 
 @MainActor
 final class StudySessionViewModel: ObservableObject {
+    
     let worker: StudySessionWorkerProtocol
-    private var hasStarted = false
     var isFinishingStudySession = false
-    var categoryObservationTask: Task<Void, Never>?
+    
+    private var categoryObservationTask: Task<Void, Never>?
     private var activeSessionObservationTask: Task<Void, Never>?
     private var timerObservationTask: Task<Void, Never>?
-
-    @Published var editingCategoryName: String = ""
+    private var hasStarted = false
 
     @Published var viewState: StudySessionViewState = .loading
-    @Published var categories: [StudyCategory] = []
-    @Published private(set) var activeSession: LocalStudySession?
-    @Published private(set) var timerState: TimerViewState = .notStarted
-    @Published var isTimerScreenPresented = false
-    @Published var errorMessage: String?
+    @Published var selectedTimerModeOption: TimerModeOption?
 
+    @Published var isTimerScreenPresented = false
+    @Published var isCreatingCategoryInline = false
+    @Published var isTimerModePickerPresented = false
+    @Published var isCountdownDurationPickerPresented = false
+
+    @Published var categories: [StudyCategory] = []
     @Published var selectedCategoryId: UUID?
     @Published var actionMenuCategoryId: UUID?
     @Published var editingCategoryId: UUID?
     @Published var categoryPendingDeletion: StudyCategory?
     @Published var creatingCategoryName: String = ""
-    @Published var isCreatingCategoryInline = false
-    @Published var isTimerModePickerPresented = false
-    @Published var isCountdownDurationPickerPresented = false
-    @Published var selectedTimerModeOption: TimerModeOption?
+    @Published var editingCategoryName: String = ""
+
     @Published var countdownHoursText = "00"
     @Published var countdownMinutesText = "05"
     @Published var countdownSecondsText = "00"
+    
+    @Published var errorMessage: String?
+    
+    @Published private(set) var activeSession: LocalStudySession?
+    @Published private(set) var timerState: TimerViewState = .notStarted
 
     var shouldShowPrimaryButton: Bool {
         viewState == .content

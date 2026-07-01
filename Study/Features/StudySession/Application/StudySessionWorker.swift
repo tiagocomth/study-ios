@@ -57,6 +57,38 @@ final class StudySessionWorker: StudySessionWorkerProtocol {
         return trimmedName
     }
 
+    func createCategory(named name: String) throws -> StudyCategory {
+        let validatedName = try validateCategoryName(name)
+        return try createCategory(CreateCategoryDTO(categoryId: .init(), name: validatedName))
+    }
+
+    func updateCategory(_ category: StudyCategory, name: String) throws -> StudyCategory? {
+        let validatedName = try validateCategoryName(name)
+        guard validatedName != category.name else { return nil }
+
+        return try updateCategory(id: category.categoryId, dto: UpdateCategoryDTO(name: validatedName))
+    }
+
+    func sanitizeCountdownText(_ text: String, maximum: Int) -> String {
+        let digits = text.filter(\.isNumber)
+        let truncatedDigits = String(digits.prefix(2))
+
+        guard !truncatedDigits.isEmpty else {
+            return ""
+        }
+
+        let value = min(Int(truncatedDigits) ?? 0, maximum)
+        return String(format: "%02d", value)
+    }
+
+    func countdownDuration(hoursText: String, minutesText: String, secondsText: String) -> Int {
+        let hours = Int(hoursText) ?? 0
+        let minutes = Int(minutesText) ?? 0
+        let seconds = Int(secondsText) ?? 0
+
+        return (hours * 3600) + (minutes * 60) + seconds
+    }
+
     func loadCategories(onBackendRefresh: @escaping CategoriesRefreshCallback) throws -> [StudyCategory] {
         try categoryManager.loadCategories(onBackendRefresh: onBackendRefresh)
     }

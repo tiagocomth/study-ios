@@ -109,15 +109,15 @@ extension StudySessionViewModel {
     }
 
     func updateCountdownHoursText(_ text: String) {
-        countdownHoursText = sanitizeCountdownText(text, maximum: 99)
+        countdownHoursText = worker.sanitizeCountdownText(text, maximum: 99)
     }
 
     func updateCountdownMinutesText(_ text: String) {
-        countdownMinutesText = sanitizeCountdownText(text, maximum: 59)
+        countdownMinutesText = worker.sanitizeCountdownText(text, maximum: 59)
     }
 
     func updateCountdownSecondsText(_ text: String) {
-        countdownSecondsText = sanitizeCountdownText(text, maximum: 59)
+        countdownSecondsText = worker.sanitizeCountdownText(text, maximum: 59)
     }
 
     func confirmCountdownDurationSelection() {
@@ -210,30 +210,18 @@ extension StudySessionViewModel {
         return .notStarted
     }
 
-    var countdownDurationInSeconds: Int {
-        let hours = Int(countdownHoursText) ?? 0
-        let minutes = Int(countdownMinutesText) ?? 0
-        let seconds = Int(countdownSecondsText) ?? 0
-
-        return (hours * 3600) + (minutes * 60) + seconds
+    private var countdownDurationInSeconds: Int {
+        worker.countdownDuration(
+            hoursText: countdownHoursText,
+            minutesText: countdownMinutesText,
+            secondsText: countdownSecondsText
+        )
     }
 
-    func resetCountdownDuration() {
+    private func resetCountdownDuration() {
         countdownHoursText = "00"
         countdownMinutesText = "05"
         countdownSecondsText = "00"
-    }
-
-    func sanitizeCountdownText(_ text: String, maximum: Int) -> String {
-        let digits = text.filter(\.isNumber)
-        let truncatedDigits = String(digits.prefix(2))
-
-        guard !truncatedDigits.isEmpty else {
-            return ""
-        }
-
-        let value = min(Int(truncatedDigits) ?? 0, maximum)
-        return String(format: "%02d", value)
     }
 
     var currentTimerModeOption: TimerModeOption? {
