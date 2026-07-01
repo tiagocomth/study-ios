@@ -15,7 +15,12 @@ struct StudySessionContentView: View {
         case .loading:
             StudySessionLoadingView()
         case .empty:
-            StudySessionEmptyView(onAddCategory: viewModel.didTapAddCategory)
+            StudySessionEmptyView(
+                isCreatingCategoryInline: $viewModel.isCreatingCategoryInline,
+                creatingCategoryName: $viewModel.creatingCategoryName,
+                onAddCategory: viewModel.didTapAddCategory,
+                onSubmitCreatingCategory: viewModel.submitCreatingCategory
+            )
         case .content:
             StudySessionCategoryGridView(viewModel: viewModel)
         case .error:

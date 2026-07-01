@@ -8,15 +8,31 @@
 import SwiftUI
 
 struct StudySessionEmptyView: View {
-    
+    @Binding var isCreatingCategoryInline: Bool
+    @Binding var creatingCategoryName: String
+
     let onAddCategory: () -> Void
+    let onSubmitCreatingCategory: () -> Void
 
     var body: some View {
         VStack(spacing: GlobalConfiguration.normalSpacing) {
             Spacer()
 
-            StudySessionAddCardView(action: onAddCategory)
-                .frame(maxWidth: 100, maxHeight: 100)
+            Group {
+                if isCreatingCategoryInline {
+                    StudySessionCardView(
+                        editingName: $creatingCategoryName,
+                        categoryName: "",
+                        isEditing: true,
+                        isSelected: false,
+                        action: {},
+                        onSubmitEditing: onSubmitCreatingCategory
+                    )
+                } else {
+                    StudySessionAddCardView(action: onAddCategory)
+                }
+            }
+            .frame(maxWidth: 100, alignment: .top)
 
             Text("Parece que você ainda não adicionou\nnenhuma matéria ainda!")
                 .font(.title2)
@@ -30,5 +46,10 @@ struct StudySessionEmptyView: View {
 }
 
 #Preview {
-    StudySessionEmptyView(onAddCategory: {})
+    StudySessionEmptyView(
+        isCreatingCategoryInline: .constant(false),
+        creatingCategoryName: .constant(""),
+        onAddCategory: {},
+        onSubmitCreatingCategory: {}
+    )
 }
