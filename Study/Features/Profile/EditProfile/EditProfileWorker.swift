@@ -36,7 +36,6 @@ final class EditProfileWorker: EditProfileWorkerProtocol {
         let updatedUser = User(
             id: response.data.userId,
             name: response.data.name,
-            isPremium: response.data.isPremium,
             photo: response.data.photoId,
             isPremium: response.data.isPremium,
             individualHoursTotal: currentUser?.individualHoursTotal ?? 0.0,

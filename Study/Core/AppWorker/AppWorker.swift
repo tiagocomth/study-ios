@@ -114,8 +114,8 @@ private extension AppWorker {
                                     let updatedUser = User(
                                         id: currentUser.id,
                                         name: currentUser.name,
-                                        isPremium: response.isPremium,
                                         photo: currentUser.photo,
+                                        isPremium: response.isPremium,
                                         individualHoursTotal: currentUser.individualHoursTotal,
                                         groupHoursTotal: currentUser.groupHoursTotal
                                     )

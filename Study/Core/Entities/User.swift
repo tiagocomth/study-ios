@@ -8,7 +8,6 @@ import Foundation
 struct User: Codable, Identifiable, Equatable {
     let id: String
     let name: String
-    let isPremium: Bool
     let photo: String?
     let isPremium: Bool
     let individualHoursTotal: Double
