@@ -63,6 +63,7 @@ struct RequestBuilder {
         case .requestJSONBody(let body):
             // Serialize body as JSON
             let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
             do {
                 urlRequest.httpBody = try encoder.encode(body)
             } catch {

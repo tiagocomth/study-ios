@@ -17,6 +17,7 @@ final class StudySessionFactory {
     private let offlineOperationQueue: OfflineOperationQueueLocalProtocol
     private let operationSyncService: OperationSyncServiceProtocol
     private let categorySyncService: CategorySyncServiceProtocol
+    private let studySessionSyncService: StudySessionSyncServiceProtocol
     private let timerModeStore: StudySessionTimerModeStoreLocalProtocol
     private let timerService: StudySessionTimerServiceProtocol
     private let categoryManager: CategoryManagerProtocol
@@ -61,13 +62,18 @@ final class StudySessionFactory {
             offlineOperationQueue: offlineOperationQueue
         )
         let timerModeStore = StudySessionTimerModeStoreLocal()
+        let studySessionSyncService = StudySessionSyncService(
+            studySessionAPI: studySessionAPI,
+            studySessionTracker: studySessionTracker,
+            offlineOperationQueue: offlineOperationQueue,
+            timerModeStore: timerModeStore
+        )
         let timerService = StudySessionTimerService(now: now)
         let categoryManager = CategoryManager(
             categoryAPI: categoryAPI,
             categoryLocal: categoryLocal,
             operationManager: operationManager,
             currentUserId: currentUserId,
-            makeId: makeId,
             now: now
         )
         let studySessionManager = StudySessionManager(
@@ -82,6 +88,7 @@ final class StudySessionFactory {
         self.offlineOperationQueue = offlineOperationQueue
         self.operationSyncService = operationSyncService
         self.categorySyncService = categorySyncService
+        self.studySessionSyncService = studySessionSyncService
         self.timerModeStore = timerModeStore
         self.timerService = timerService
         self.categoryManager = categoryManager
@@ -99,13 +106,14 @@ final class StudySessionFactory {
         await categoryLocal.ensureRestored(userId: userId)
         await studySessionTracker.ensureRestored(userId: userId)
         await offlineOperationQueue.ensureRestored(userId: userId)
+        await timerModeStore.ensureRestored(userId: userId)
     }
 
     func syncPendingOperations() async {
         do {
             await restoreLocalState()
             let result = try await operationSyncService.sync()
-            try await handleOperationSyncResult(result)
+            await handleSyncResult(result)
         } catch {
             OfflineOperationQueueLogger().error("Failed to sync study session operations: \(error.localizedDescription)")
         }
@@ -116,6 +124,8 @@ final class StudySessionFactory {
 
         await studySessionTracker.ensureRestored(userId: userId)
         await offlineOperationQueue.ensureRestored(userId: userId)
+
+        guard await finishExpectedCountdownIfNeeded(userId: userId) == false else { return }
 
         guard let session = await studySessionTracker.getActiveSession(userId: userId) else { return }
         guard StudySessionExpirationPolicy.shouldExpire(session, now: now()) else { return }
@@ -137,12 +147,27 @@ final class StudySessionFactory {
             OfflineOperationQueueLogger().error("Failed to enqueue delete operation for expired study session \(session.sessionId.uuidString): \(error.localizedDescription)")
         }
     }
-    
-    static func makeModelContainer() -> ModelContainer {
+}
+
+private extension StudySessionFactory {
+    func finishExpectedCountdownIfNeeded(userId: UUID) async -> Bool {
+        guard
+            let session = await studySessionTracker.getActiveSession(userId: userId),
+            session.state == .running,
+            let expectedEndDate = session.expectedEndDate,
+            expectedEndDate <= now()
+        else {
+            return false
+        }
+      
         do {
-            return try ModelContainer(for: StoredStudyCategory.self)
+            try await studySessionManager.finish(endDate: expectedEndDate)
+            await timerModeStore.clear(userId: userId)
+            OfflineOperationQueueLogger().info("Finished expired countdown session \(session.sessionId.uuidString)")
+            return true
         } catch {
-            fatalError("Failed to create model container: \(error)")
+            OfflineOperationQueueLogger().error("Failed to finish expired countdown session \(session.sessionId.uuidString): \(error.localizedDescription)")
+            return false
         }
     }
 }
@@ -151,7 +176,6 @@ private extension StudySessionFactory {
     
     func makeStudySessionViewModel() -> StudySessionViewModel {
         let viewModel = StudySessionViewModel(worker: makeStudySessionWorker())
-        viewModel.coordinator = coordinator
         return viewModel
     }
 
@@ -165,15 +189,36 @@ private extension StudySessionFactory {
         )
     }
 
-    func handleOperationSyncResult(_ result: OperationSyncResult) async throws {
+    func handleSyncResult(_ result: OperationSyncResult) async {
         switch result {
         case .completed:
             guard let userId = userSession.currentUserId else { return }
-            try await categorySyncService.refreshFromBackendIfQueueIsEmpty(userId: userId)
+            await refreshBackendState(userId: userId)
         case .stoppedOnFailure:
             OfflineOperationQueueLogger().info("Study session operation sync stopped after a retryable failure")
         case .alreadyRunning:
             OfflineOperationQueueLogger().debug("Study session operation sync skipped because a sync is already running")
+        }
+    }
+
+    private func refreshBackendState(userId: UUID) async {
+        await refreshCategories(userId: userId)
+        await refreshActiveSession(userId: userId)
+    }
+
+    private func refreshCategories(userId: UUID) async {
+        do {
+            try await categorySyncService.refreshFromBackendIfQueueIsEmpty(userId: userId)
+        } catch {
+            OfflineOperationQueueLogger().error("Failed to refresh categories from backend: \(error.localizedDescription)")
+        }
+    }
+
+    private func refreshActiveSession(userId: UUID) async {
+        do {
+            try await studySessionSyncService.refreshFromBackendIfQueueIsEmpty(userId: userId)
+        } catch {
+            OfflineOperationQueueLogger().error("Failed to refresh active study session from backend: \(error.localizedDescription)")
         }
     }
 }

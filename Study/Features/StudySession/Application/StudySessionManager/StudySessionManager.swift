@@ -40,12 +40,12 @@ final class StudySessionManager: StudySessionManagerProtocol {
         return await studySessionTracker.getActiveSession(userId: userId)
     }
     
-    func start(categoryId: UUID) async throws {
+    func start(categoryId: UUID, mode: StudySessionTimerMode) async throws {
         guard let userId = await currentUserId() else {
             throw StudySessionError.missingCurrentUser
         }
 
-        let action = try await studySessionTracker.start(categoryId: categoryId, userId: userId)
+        let action = try await studySessionTracker.start(categoryId: categoryId, userId: userId, mode: mode)
         Task { [weak self] in
             guard let self else { return }
             await sendRemote(action, userId: userId)
@@ -76,15 +76,16 @@ final class StudySessionManager: StudySessionManagerProtocol {
         }
     }
     
-    func finish() async throws {
+    func finish(endDate: Date? = nil) async throws {
         guard let userId = await currentUserId() else {
             throw StudySessionError.missingCurrentUser
         }
 
-        let action = try await studySessionTracker.finish(userId: userId)
+        let action = try await studySessionTracker.finish(userId: userId, endDate: endDate)
         Task { [weak self] in
             guard let self else { return }
             await sendRemote(action, userId: userId)
+            await studySessionTracker.clear(userId: userId)
         }
     }
 }
@@ -146,6 +147,8 @@ private extension StudySessionManager {
             }
         case .enqueued:
             try? await operationManager.enqueue(finishKind, userId: userId)
+        case .rollback:
+            return
         case .failed:
             return
         }

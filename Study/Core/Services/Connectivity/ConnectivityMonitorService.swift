@@ -12,7 +12,7 @@ final class ConnectivityMonitorService: ConnectivityMonitorServiceProtocol {
     private let logger: DomainLogging
     private var monitor: NWPathMonitor?
     private var continuations: [UUID: AsyncStream<Bool>.Continuation]
-    private var currentIsConnected: Bool
+    private var currentIsConnected: Bool?
 
     init(
         queue: DispatchQueue = DispatchQueue(label: "study.connectivity.monitor"),
@@ -22,11 +22,11 @@ final class ConnectivityMonitorService: ConnectivityMonitorServiceProtocol {
         self.logger = logger
         self.monitor = nil
         self.continuations = [:]
-        self.currentIsConnected = false
+        self.currentIsConnected = nil
     }
 
     var isConnected: Bool {
-        get async { currentIsConnected }
+        get async { currentIsConnected ?? false }
     }
 
     var connectivityChanges: AsyncStream<Bool> {
@@ -38,7 +38,10 @@ final class ConnectivityMonitorService: ConnectivityMonitorServiceProtocol {
 
             let id = UUID()
             continuations[id] = continuation
-            continuation.yield(currentIsConnected)
+            
+            if let currentIsConnected {
+                continuation.yield(currentIsConnected)
+            }
 
             continuation.onTermination = { [weak self] _ in
                 Task { @MainActor [weak self] in

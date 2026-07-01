@@ -8,6 +8,7 @@ import Foundation
 nonisolated enum StudySessionError: LocalizedError, Equatable, Sendable {
     case missingCurrentUser
     case categoryNotFound
+    case invalidCategoryName
     case studySessionTimerNotConfigured
 
     var errorDescription: String? {
@@ -16,6 +17,8 @@ nonisolated enum StudySessionError: LocalizedError, Equatable, Sendable {
             "Missing current user."
         case .categoryNotFound:
             "Category not found."
+        case .invalidCategoryName:
+            "Category name cannot be empty."
         case .studySessionTimerNotConfigured:
             "Study session timer is not configured."
         }

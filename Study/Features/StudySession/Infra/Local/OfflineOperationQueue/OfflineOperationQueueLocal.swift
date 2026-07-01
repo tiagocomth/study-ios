@@ -45,18 +45,6 @@ actor OfflineOperationQueueLocal: OfflineOperationQueueLocalProtocol {
         logger.info("Enqueued offline operation \(operation.id.uuidString)")
     }
 
-    func enqueue(_ operations: [PendingOfflineOperation], userId: UUID) async throws(OfflineOperationQueueLocalError) {
-        await ensureRestored(userId: userId)
-        guard !operations.isEmpty else { return }
-
-        var updatedOperations = pendingOperationsByUser[userId] ?? []
-        updatedOperations.append(contentsOf: operations)
-
-        pendingOperationsByUser[userId] = updatedOperations
-        try persist(userId: userId)
-        logger.info("Enqueued \(operations.count) offline operations")
-    }
-
     func peek(userId: UUID) -> PendingOfflineOperation? {
         pendingOperationsByUser[userId]?.first
     }
@@ -88,6 +76,25 @@ actor OfflineOperationQueueLocal: OfflineOperationQueueLocalProtocol {
         pendingOperationsByUser[userId] = updatedOperations
         try persist(userId: userId)
         logger.info("Marked first offline operation \(id.uuidString) as failed")
+    }
+
+    func removeOperation(_ id: UUID, userId: UUID) async throws(OfflineOperationQueueLocalError) {
+        await ensureRestored(userId: userId)
+
+        guard var updatedOperations = pendingOperationsByUser[userId] else {
+            logger.error("Failed to remove offline operation \(id.uuidString): queue is empty")
+            throw OfflineOperationQueueLocalError.notFound
+        }
+
+        guard let operationIndex = updatedOperations.firstIndex(where: { $0.id == id }) else {
+            logger.error("Failed to remove offline operation \(id.uuidString): operation not found")
+            throw OfflineOperationQueueLocalError.notFound
+        }
+
+        updatedOperations.remove(at: operationIndex)
+        pendingOperationsByUser[userId] = updatedOperations
+        try persist(userId: userId)
+        logger.info("Removed offline operation \(id.uuidString)")
     }
 
     func clear(userId: UUID) async throws(OfflineOperationQueueLocalError) {

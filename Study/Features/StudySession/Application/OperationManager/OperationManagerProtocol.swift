@@ -9,6 +9,7 @@ enum OperationDispatchResult: Sendable {
     case sent
     case enqueued
     case failed(NetworkError)
+    case rollback
 }
 
 nonisolated protocol OperationManagerProtocol {
@@ -21,5 +22,4 @@ nonisolated protocol OperationManagerProtocol {
     ) async -> OperationDispatchResult
 
     func enqueue(_ kind: PendingOfflineOperationKind, userId: UUID) async throws
-    func enqueue(_ kinds: [PendingOfflineOperationKind], userId: UUID) async throws
 }

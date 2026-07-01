@@ -45,10 +45,16 @@ private extension OperationSyncService {
             do {
                 try await offlineOperationSender.send(operation)
                 try await offlineOperationQueue.markFirstSucceeded(operation.id, userId: userId)
-                
-            } catch is NetworkError {
-                try? await offlineOperationQueue.markFirstFailed(operation.id, userId: userId)
-                return false
+
+            } catch let error as NetworkError {
+                if OfflineRetryPolicy.shouldEnqueue(error) {
+                    try? await offlineOperationQueue.markFirstFailed(operation.id, userId: userId)
+                    logger.info("Keeping offline operation \(operation.id.uuidString) queued for retry after network failure")
+                    return false
+                }
+
+                try await offlineOperationQueue.removeOperation(operation.id, userId: userId)
+                logger.error("Dropped offline operation \(operation.id.uuidString) after a non-retryable failure: \(error.localizedDescription)")
                 
             } catch let error as OfflineOperationQueueLocalError {
                 throw error

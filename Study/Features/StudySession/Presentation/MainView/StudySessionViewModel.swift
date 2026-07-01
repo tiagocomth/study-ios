@@ -1,0 +1,133 @@
+//
+//  StudySessionViewModel.swift
+//  Study
+//
+
+import Foundation
+import Combine
+import SwiftUI
+
+@MainActor
+final class StudySessionViewModel: ObservableObject {
+    
+    let worker: StudySessionWorkerProtocol
+    var isFinishingStudySession = false
+    
+    private var categoryObservationTask: Task<Void, Never>?
+    private var activeSessionObservationTask: Task<Void, Never>?
+    private var timerObservationTask: Task<Void, Never>?
+    private var hasStarted = false
+
+    @Published var viewState: StudySessionViewState = .loading
+    @Published var selectedTimerModeOption: TimerModeOption?
+
+    @Published var isTimerScreenPresented = false
+    @Published var isCreatingCategoryInline = false
+    @Published var isTimerModePickerPresented = false
+    @Published var isCountdownDurationPickerPresented = false
+
+    @Published var categories: [StudyCategory] = []
+    @Published var selectedCategoryId: UUID?
+    @Published var actionMenuCategoryId: UUID?
+    @Published var editingCategoryId: UUID?
+    @Published var categoryPendingDeletion: StudyCategory?
+    @Published var creatingCategoryName: String = ""
+    @Published var editingCategoryName: String = ""
+
+    @Published var countdownHoursText = "00"
+    @Published var countdownMinutesText = "05"
+    @Published var countdownSecondsText = "00"
+    
+    @Published var errorMessage: String?
+    
+    @Published private(set) var activeSession: LocalStudySession?
+    @Published private(set) var timerState: TimerViewState = .notStarted
+
+    var shouldShowPrimaryButton: Bool {
+        viewState == .content
+    }
+    
+    init(worker: StudySessionWorkerProtocol) {
+        self.worker = worker
+    }
+
+    deinit {
+        categoryObservationTask?.cancel()
+        activeSessionObservationTask?.cancel()
+        timerObservationTask?.cancel()
+    }
+
+    func onViewAppear() {
+        guard !hasStarted else { return }
+
+        hasStarted = true
+        errorMessage = nil
+
+        observeCategories()
+        observeActiveStudySession()
+        observeTimer()
+        loadCategories()
+    }
+
+    func reset(shouldDismissTimerScreen: Bool = true) {
+        activeSession = nil
+        selectedCategoryId = nil
+        selectedTimerModeOption = nil
+        timerState = .notStarted
+
+        if shouldDismissTimerScreen {
+            isTimerScreenPresented = false
+        }
+
+        isFinishingStudySession = false
+    }
+}
+
+// MARK: - Observable
+extension StudySessionViewModel {
+    private func observeCategories() {
+        categoryObservationTask?.cancel()
+        categoryObservationTask = Task { [weak self] in
+            guard let self else { return }
+
+            for await categories in worker.categoryChanges() {
+                handleCategoryUpdate(categories)
+            }
+        }
+    }
+    
+    private func observeActiveStudySession() {
+        activeSessionObservationTask?.cancel()
+        activeSessionObservationTask = Task { [weak self] in
+            guard let self else { return }
+
+            let sessionChanges = await worker.activeStudySessionChanges()
+            for await session in sessionChanges {
+                activeSession = session
+                isTimerScreenPresented = session != nil
+                syncSelectedCategory(with: session)
+            }
+        }
+    }
+    
+    func observeTimer() {
+        timerObservationTask?.cancel()
+        timerObservationTask = Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                let timerChanges = try await worker.timerChanges()
+
+                for await timerState in timerChanges {
+                    let viewState = makeTimerViewState(from: timerState)
+                    self.timerState = viewState
+                    finishStudySessionIfCountdownCompleted(viewState)
+                }
+            } catch let error as StudySessionError where error == .studySessionTimerNotConfigured {
+                timerState = .notStarted
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+}

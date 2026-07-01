@@ -26,7 +26,8 @@ final class StudySessionCoordinator: Coordinator {
 
     func coordinate(to route: StudySessionRouter) -> some View {
         switch route {
-        case .none: EmptyView()
+        case .none:
+            EmptyView()
         }
     }
 }

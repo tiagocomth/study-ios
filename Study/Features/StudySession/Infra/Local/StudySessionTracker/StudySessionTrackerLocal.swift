@@ -53,6 +53,12 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         activeSessionsByUser[userId]
     }
 
+    func save(_ session: LocalStudySession, userId: UUID) async throws(StudySessionTrackerLocalError) {
+        try await persist(session, userId: userId)
+        emitSessionChanges(for: userId)
+        logger.info("Saved active study session \(session.sessionId.uuidString)")
+    }
+
     func restoreState(for userId: UUID) -> RestoreState {
         restoreStatesByUser[userId] ?? .notStarted
     }
@@ -62,7 +68,11 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         await restore(userId: userId)
     }
 
-    func start(categoryId: UUID, userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+    func start(
+        categoryId: UUID,
+        userId: UUID,
+        mode: StudySessionTimerMode
+    ) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
         await ensureRestored(userId: userId)
 
         if let activeSession = activeSessionsByUser[userId], activeSession.state != .finished {
@@ -70,11 +80,15 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
             throw StudySessionTrackerLocalError.activeSessionAlreadyExists
         }
 
+        let startDate = now()
+        let countdownDurationSeconds = countdownDurationSeconds(from: mode)
         let session = LocalStudySession(
             sessionId: makeId(),
             categoryId: categoryId,
-            startDate: now(),
+            startDate: startDate,
             endDate: nil,
+            expectedEndDate: countdownDurationSeconds.map { startDate.addingTimeInterval(TimeInterval($0)) },
+            countdownDurationSeconds: countdownDurationSeconds,
             state: .running,
             pauses: []
         )
@@ -114,6 +128,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         )
 
         session.pauses.append(pause)
+        session.expectedEndDate = nil
         session.state = .paused
 
         try await persist(session, userId: userId)
@@ -148,6 +163,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
 
         let endedAt = now()
         session.pauses[pauseIndex].endedAt = endedAt
+        session.expectedEndDate = expectedEndDateAfterResume(for: session, at: endedAt)
         session.state = .running
 
         try await persist(session, userId: userId)
@@ -162,7 +178,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         )
     }
 
-    func finish(userId: UUID) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
+    func finish(userId: UUID, endDate requestedEndDate: Date? = nil) async throws(StudySessionTrackerLocalError) -> StudySessionTrackerAction {
         await ensureRestored(userId: userId)
         var session = try requireActiveSession(userId: userId)
 
@@ -171,7 +187,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
             throw StudySessionTrackerLocalError.sessionAlreadyFinished
         }
 
-        let endDate = now()
+        let endDate = requestedEndDate ?? now()
 
         var closePauseDTO: ResumeStudySessionDTO?
 
@@ -185,6 +201,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         }
 
         session.endDate = endDate
+        session.expectedEndDate = nil
         session.state = .finished
 
         try await persist(session, userId: userId)
@@ -239,6 +256,34 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
         return openIndex
     }
 
+    private func countdownDurationSeconds(from mode: StudySessionTimerMode) -> Int? {
+        switch mode {
+        case .stopwatch:
+            return nil
+        case .countdown(let durationSeconds):
+            return durationSeconds
+        }
+    }
+
+    private func expectedEndDateAfterResume(for session: LocalStudySession, at date: Date) -> Date? {
+        guard let countdownDurationSeconds = session.countdownDurationSeconds else { return nil }
+
+        let elapsedSeconds = elapsedSeconds(for: session, at: date)
+        let remainingSeconds = max(countdownDurationSeconds - elapsedSeconds, 0)
+
+        return date.addingTimeInterval(TimeInterval(remainingSeconds))
+    }
+
+    private func elapsedSeconds(for session: LocalStudySession, at date: Date) -> Int {
+        let totalDuration = max(date.timeIntervalSince(session.startDate), 0)
+        let pausedDuration = session.pauses.reduce(into: 0.0) { partialResult, pause in
+            let pauseEndDate = pause.endedAt ?? date
+            partialResult += max(pauseEndDate.timeIntervalSince(pause.startedAt), 0)
+        }
+
+        return max(Int(totalDuration - pausedDuration), 0)
+    }
+
     private func persist(_ session: LocalStudySession, userId: UUID) async throws(StudySessionTrackerLocalError) {
         do {
             let data = try await MainActor.run {
@@ -246,6 +291,7 @@ actor StudySessionTrackerLocal: StudySessionTrackerLocalProtocol {
             }
             userDefaults.set(data, forKey: key(for: userId))
             activeSessionsByUser[userId] = session
+            restoreStatesByUser[userId] = .restored
         } catch {
             logger.error("Failed to persist study session \(session.sessionId.uuidString): \(error.localizedDescription)")
             throw StudySessionTrackerLocalError.failedToPersistSession

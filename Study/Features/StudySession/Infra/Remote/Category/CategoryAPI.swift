@@ -18,27 +18,27 @@ final class CategoryAPI: CategoryAPIProtocol {
     }
 
     func getAll() async throws(NetworkError) -> [StudyCategory] {
-        logger.info("Fetching categories")
+        logger.info("Sending categories fetch request")
         return try await apiClient.request(StudySessionEndpoint.getCategories)
     }
 
     func getById(_ id: UUID) async throws(NetworkError) -> StudyCategory {
-        logger.info("Fetching category \(id.uuidString)")
+        logger.info("Sending category fetch request \(id.uuidString)")
         return try await apiClient.request(StudySessionEndpoint.getCategoryById(id))
     }
 
     func create(_ dto: CreateCategoryDTO) async throws(NetworkError) {
-        logger.info("Creating category")
+        logger.info("Sending category create request")
         let _: EmptyResponse = try await apiClient.request(StudySessionEndpoint.createCategory(dto))
     }
 
     func update(id: UUID, dto: UpdateCategoryDTO) async throws(NetworkError) {
-        logger.info("Updating category \(id.uuidString)")
+        logger.info("Sending category update request \(id.uuidString)")
         let _: EmptyResponse = try await apiClient.request(StudySessionEndpoint.updateCategory(id: id, dto: dto))
     }
 
     func delete(id: UUID) async throws(NetworkError) {
-        logger.info("Deleting category \(id.uuidString)")
+        logger.info("Sending category delete request \(id.uuidString)")
         let _: EmptyResponse = try await apiClient.request(StudySessionEndpoint.deleteCategory(id))
     }
 }

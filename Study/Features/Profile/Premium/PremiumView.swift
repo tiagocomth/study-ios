@@ -11,38 +11,31 @@ struct PremiumView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            HStack {
-                Spacer()
-                Button(action: { viewModel.dismiss() }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
+            if viewModel.isPremium {
+                VStack(spacing: 12) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 40))
+                        .foregroundColor(.green)
+                    Text("Você já é um usuário Premium!")
+                        .font(.headline)
+                        .foregroundColor(.green)
                 }
-                .buttonStyle(.plain)
+            } else if viewModel.isLoading {
+                ProgressView("Processando compra...")
+            } else {
+                Button("Comprar") {
+                    viewModel.purchasePremium()
+                }
+                .buttonStyle(.borderedProminent)
             }
             
-            Image(systemName: "crown.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.yellow)
-            
-            Text("Estude sem limites com a Versão Premium!")
-                .font(.title2)
-                .bold()
-                .multilineTextAlignment(.center)
-            
-            Text("Tenha acesso a estatísticas detalhadas, sessões ilimitadas de estudo e muito mais.")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
-            Button("Assinar Agora") {
-                // Ação de assinatura
+            if let errorMessage = viewModel.errorMessage {
+                Text("Erro: \(errorMessage)")
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .multilineTextAlignment(.center)
+                    .padding()
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.yellow)
-            .foregroundColor(.black)
-            .padding(.top, 10)
         }
         .padding()
         .frame(width: 400, height: 320)
@@ -52,17 +45,20 @@ struct PremiumView: View {
 #Preview {
     struct DummyPaymentService: PaymentProtocol {
         func loadProducts() async throws(PaymentError) -> [PaymentProduct] { [] }
-        func purchase(_ identifier: ProductIdentifier) async throws(PaymentError) -> PaymentPurchaseResult {
+        func purchase(_ identifier: ProductIdentifier, appAccountToken: UUID) async throws(PaymentError) -> PaymentPurchaseResult {
             return .success(.premiumMonthly)
         }
+        func isPurchased(_ identifier: ProductIdentifier) async -> Bool { false }
         func refreshEntitlements() async {}
         func startTransactionListener(callback: @escaping PaymentEventCallback) async {}
         func stopTransactionListener() async {}
     }
     
-    let worker = PremiumWorker(
-        paymentService: DummyPaymentService(),
-        userSession: UserSessionService()
-    )
+    struct DummyPremiumWorker: PremiumWorkerProtocol {
+        var isPremium: Bool = false
+        func purchasePremium() async throws {}
+    }
+    
+    let worker = DummyPremiumWorker()
     return PremiumView(viewModel: PremiumViewModel(worker: worker))
 }
