@@ -37,6 +37,7 @@ final class EditProfileWorker: EditProfileWorkerProtocol {
             id: response.data.userId,
             name: response.data.name,
             photo: response.data.photoId,
+            isPremium: response.data.isPremium,
             individualHoursTotal: currentUser?.individualHoursTotal ?? 0.0,
             groupHoursTotal: currentUser?.groupHoursTotal ?? 0.0
         )
