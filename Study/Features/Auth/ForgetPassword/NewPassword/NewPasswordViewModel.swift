@@ -32,6 +32,10 @@ final class NewPasswordViewModel: ObservableObject {
         }
     }
 
+    var isFormValid: Bool {
+        password.isValid() && passwordConfirmation.isValid() && password.value == passwordConfirmation.value
+    }
+
     init(worker: NewPasswordWorkerProtocol) {
         self.worker = worker
     }

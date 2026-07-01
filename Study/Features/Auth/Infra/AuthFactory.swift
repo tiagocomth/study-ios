@@ -29,8 +29,8 @@ final class AuthFactory {
         return ForgetPasswordView(viewModel: viewModel)
     }
 
-    func makeCodeView() -> some View {
-        let viewModel = makeCodeVM()
+    func makeCodeView(email: Email) -> some View {
+        let viewModel = makeCodeVM(email: email)
         return CodeView(viewModel: viewModel)
     }
 
@@ -70,10 +70,10 @@ extension AuthFactory {
         return viewModel
     }
 
-    private func makeCodeVM() -> CodeViewModel {
+    private func makeCodeVM(email: Email) -> CodeViewModel {
         let service = CodeService(apiClient: apiClient)
         let worker = CodeWorker(service: service, sessionStore: passwordResetSessionStore)
-        let viewModel = CodeViewModel(worker: worker)
+        let viewModel = CodeViewModel(email: email, worker: worker)
         
         viewModel.coordinator = authCoordinator
         return viewModel

@@ -26,8 +26,8 @@ extension AuthUserDTO {
         User(
             id: id,
             name: name ?? email,
-            isPremium: isPremium,
             photo: nil,
+            isPremium: isPremium,
             individualHoursTotal: 0,
             groupHoursTotal: 0
         )

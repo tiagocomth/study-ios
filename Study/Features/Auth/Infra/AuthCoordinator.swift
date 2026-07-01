@@ -23,8 +23,8 @@ final class AuthCoordinator: Coordinator {
         switch route {
         case .forgotPassword:
             factory.makeForgetPasswordView()
-        case .code:
-            factory.makeCodeView()
+        case .code(let email):
+            factory.makeCodeView(email: email)
         case .newPassword:
             factory.makeNewPasswordView()
         case .register:
@@ -68,8 +68,8 @@ extension AuthCoordinator: LoginCoordinatorProtocol {
 
 extension AuthCoordinator: ForgetPasswordCoordinatorProtocol {
 
-    func navigateToCode() {
-        navigateTo(route: .code)
+    func navigateToCode(email: Email) {
+        navigateTo(route: .code(email: email))
     }
 }
 

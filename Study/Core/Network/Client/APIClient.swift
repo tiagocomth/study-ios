@@ -95,8 +95,9 @@ extension APIClient {
             throw NetworkError.emptyData(message: "Expected a response body but received none.")
         }
 
-        do{
+        do {
             let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
             return try decoder.decode(T.self, from: data)
         } catch {
             throw NetworkError.decodingFailed(message: "Failed to decode data to model.")

@@ -11,7 +11,7 @@ enum AuthRouter: Hashable, Identifiable {
     var id: Self { self }
     
     case forgotPassword
-    case code
+    case code(email: Email)
     case newPassword
     case register
     case emailValidate(email: Email)
