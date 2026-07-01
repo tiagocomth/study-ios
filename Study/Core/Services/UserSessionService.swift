@@ -41,7 +41,7 @@ final class UserSessionService: ObservableObject, UserSessionProtocol {
     /// `restore()` at app launch to load any persisted session.
     /// `logger` defaults to a `SessionLogger`; pass a fake conforming to
     /// `DomainLogging` to redirect or silence logs in tests.
-    nonisolated init(keychain: KeychainServicing = KeychainService(), logger: DomainLogging = SessionLogger()) {
+    private nonisolated init(keychain: KeychainServicing = KeychainService(), logger: DomainLogging = SessionLogger()) {
         self.keychain = keychain
         self.logger = logger
     }
@@ -55,9 +55,15 @@ final class UserSessionService: ObservableObject, UserSessionProtocol {
     }
 
     var currentUserId: UUID? {
-        keychain
+        let id = keychain
             .read(User.self, for: AppKeys.userKey.rawValue)
             .flatMap { UUID(uuidString: $0.id) }
+        
+        if id == nil {
+            AuthenticationInterceptor.shared.handleUnauthorized()
+        }
+            
+        return id
     }
 
     var isLoggedIn: Bool {

@@ -46,6 +46,6 @@ struct LogoutConfirmationView: View {
 
 #Preview {
     LogoutConfirmationView(viewModel: LogoutConfirmationViewModel(
-        userSession: UserSessionService()
+        userSession: UserSessionService.shared
     ))
 }
