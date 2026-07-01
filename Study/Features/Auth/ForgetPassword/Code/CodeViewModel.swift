@@ -55,7 +55,8 @@ final class CodeViewModel: ObservableObject {
 
     private func updateCodeValue(_ value: String) {
         objectWillChange.send()
-        code = PasswordResetCode(value: value)
+        let filtered = String(value.filter(\.isNumber).prefix(PasswordResetCode.length))
+        code = PasswordResetCode(value: filtered)
         canValidateCode = code.isValid()
         errorMessage = nil
     }

@@ -27,7 +27,11 @@ private extension CodeView {
 
     var validationForm: some View {
         VStack(alignment: .leading, spacing: 24) {
-            codeInput
+            HStack {
+                Spacer()
+                codeInput
+                Spacer()
+            }
 
             if let error = viewModel.errorMessage {
                 Text(error)
@@ -55,17 +59,22 @@ private extension CodeView {
         ZStack {
             // Campo real (invisível) que captura a digitação.
             TextField("", text: $viewModel.codeValue)
+                #if os(iOS)
+                .keyboardType(.numberPad)
+                #endif
                 .focused($isCodeFieldFocused)
                 .opacity(0.01)
-                .frame(height: 1)
+                .frame(width: 1, height: 1)
+                .offset(x: -1000, y: -1000)
                 .focusEffectDisabled()
 
             // Representação visual em caixas.
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 ForEach(0..<PasswordResetCode.length, id: \.self) { index in
                     digitBox(at: index)
                 }
             }
+            .frame(maxWidth: 328)
             .contentShape(Rectangle())
             .onTapGesture { isCodeFieldFocused = true }
         }
@@ -78,7 +87,8 @@ private extension CodeView {
 
         return Text(digit)
             .font(.title2.bold())
-            .frame(width: 48, height: 54)
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
             .background(Color.adaptiveTextFieldBackground)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
