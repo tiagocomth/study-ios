@@ -20,10 +20,12 @@ struct StudySessionSyncServiceTests {
         let studySessionAPI = StudySessionAPIStub(lastSession: activeSession)
         let tracker = StudySessionTrackerSpy()
         let queue = OfflineOperationQueueSpy(peekResult: nil)
+        let timerModeStore = StudySessionTimerModeStoreSpy()
         let service = StudySessionSyncService(
             studySessionAPI: studySessionAPI,
             studySessionTracker: tracker,
-            offlineOperationQueue: queue
+            offlineOperationQueue: queue,
+            timerModeStore: timerModeStore
         )
 
         try await service.refreshFromBackendIfQueueIsEmpty(userId: userId)
@@ -33,8 +35,10 @@ struct StudySessionSyncServiceTests {
         #expect(await studySessionAPI.lastCallCount == 1)
         #expect(savedSession?.sessionId == sessionId)
         #expect(savedSession?.categoryId == categoryId)
-        #expect(savedSession?.state == .running)
+        #expect(savedSession?.state == .paused)
+        #expect(savedSession?.pauses.count == 1)
         #expect(savedSession?.startDate == ISO8601DateParser().parse("2026-06-30T12:00:00Z"))
+        #expect(await timerModeStore.savedMode == .stopwatch)
     }
 
     @Test("skips refresh when there are pending offline operations")
@@ -48,10 +52,12 @@ struct StudySessionSyncServiceTests {
             attemptCount: 0,
             kind: .deleteCategory(UUID())
         ))
+        let timerModeStore = StudySessionTimerModeStoreSpy()
         let service = StudySessionSyncService(
             studySessionAPI: studySessionAPI,
             studySessionTracker: tracker,
-            offlineOperationQueue: queue
+            offlineOperationQueue: queue,
+            timerModeStore: timerModeStore
         )
 
         try await service.refreshFromBackendIfQueueIsEmpty(userId: userId)
@@ -65,10 +71,12 @@ struct StudySessionSyncServiceTests {
         let studySessionAPI = StudySessionAPIStub(lastSession: nil)
         let tracker = StudySessionTrackerSpy()
         let queue = OfflineOperationQueueSpy(peekResult: nil)
+        let timerModeStore = StudySessionTimerModeStoreSpy()
         let service = StudySessionSyncService(
             studySessionAPI: studySessionAPI,
             studySessionTracker: tracker,
-            offlineOperationQueue: queue
+            offlineOperationQueue: queue,
+            timerModeStore: timerModeStore
         )
 
         try await service.refreshFromBackendIfQueueIsEmpty(userId: userId)
@@ -76,6 +84,49 @@ struct StudySessionSyncServiceTests {
         #expect(await studySessionAPI.lastCallCount == 1)
         #expect(await tracker.clearCallCount == 1)
         #expect(await tracker.savedSession == nil)
+        #expect(await timerModeStore.clearCallCount == 1)
+    }
+
+    @Test("preserves the local paused state when backend returns the same active session")
+    func preservesLocalPausedStateWhenRefreshingSameSession() async throws {
+        let studySessionAPI = StudySessionAPIStub(lastSession: makeActiveSessionDTO())
+        let tracker = StudySessionTrackerSpy(
+            activeSession: LocalStudySession(
+                sessionId: sessionId,
+                categoryId: categoryId,
+                startDate: ISO8601DateParser().parse("2026-06-30T12:00:00Z")!,
+                endDate: nil,
+                expectedEndDate: ISO8601DateParser().parse("2026-06-30T13:00:00Z"),
+                countdownDurationSeconds: 3600,
+                state: .paused,
+                pauses: [
+                    LocalStudyPause(
+                        pauseId: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!,
+                        startedAt: ISO8601DateParser().parse("2026-06-30T12:15:00Z")!,
+                        endedAt: nil
+                    )
+                ]
+            )
+        )
+        let queue = OfflineOperationQueueSpy(peekResult: nil)
+        let timerModeStore = StudySessionTimerModeStoreSpy(mode: .countdown(durationSeconds: 3600))
+        let service = StudySessionSyncService(
+            studySessionAPI: studySessionAPI,
+            studySessionTracker: tracker,
+            offlineOperationQueue: queue,
+            timerModeStore: timerModeStore
+        )
+
+        try await service.refreshFromBackendIfQueueIsEmpty(userId: userId)
+
+        let savedSession = await tracker.savedSession
+
+        #expect(savedSession?.state == .paused)
+        #expect(savedSession?.pauses.count == 1)
+        #expect(savedSession?.pauses.first?.endedAt == nil)
+        #expect(savedSession?.expectedEndDate == ISO8601DateParser().parse("2026-06-30T13:00:00Z"))
+        #expect(savedSession?.countdownDurationSeconds == 3600)
+        #expect(await timerModeStore.savedMode == .countdown(durationSeconds: 3600))
     }
 }
 
@@ -86,7 +137,23 @@ private extension StudySessionSyncServiceTests {
             userId: userId.uuidString,
             categoryId: categoryId.uuidString,
             startedAt: "2026-06-30T12:00:00Z",
-            endedAt: nil
+            endedAt: nil,
+            duration: 1800,
+            category: StudyCategoryDTO(
+                categoryId: categoryId.uuidString,
+                userId: userId.uuidString,
+                name: "Math",
+                createdAt: "2026-06-30T12:00:00Z",
+                isDeleted: false
+            ),
+            pauses: [
+                StudySessionPauseDTO(
+                    pauseId: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!.uuidString,
+                    studySessionId: sessionId.uuidString,
+                    startedAt: "2026-06-30T12:15:00Z",
+                    endedAt: nil
+                )
+            ]
         )
     }
 
@@ -115,6 +182,10 @@ private actor StudySessionAPIStub: StudySessionAPIProtocol {
 private actor StudySessionTrackerSpy: StudySessionTrackerLocalProtocol {
     private(set) var savedSession: LocalStudySession?
     private(set) var clearCallCount = 0
+
+    init(activeSession: LocalStudySession? = nil) {
+        self.savedSession = activeSession
+    }
 
     func sessionChanges(userId: UUID) async -> AsyncStream<LocalStudySession?> {
         AsyncStream { continuation in
@@ -160,4 +231,26 @@ private actor OfflineOperationQueueSpy: OfflineOperationQueueLocalProtocol {
     func markFirstFailed(_ id: UUID, userId: UUID) async throws(OfflineOperationQueueLocalError) {}
     func removeOperation(_ id: UUID, userId: UUID) async throws(OfflineOperationQueueLocalError) {}
     func clear(userId: UUID) async throws(OfflineOperationQueueLocalError) {}
+}
+
+private actor StudySessionTimerModeStoreSpy: StudySessionTimerModeStoreLocalProtocol {
+    private(set) var savedMode: StudySessionTimerMode?
+    private(set) var clearCallCount = 0
+
+    init(mode: StudySessionTimerMode? = nil) {
+        self.savedMode = mode
+    }
+
+    func restoreState(for userId: UUID) async -> RestoreState { .restored }
+    func ensureRestored(userId: UUID) async {}
+    func getMode(userId: UUID) async -> StudySessionTimerMode? { savedMode }
+
+    func saveMode(_ mode: StudySessionTimerMode, userId: UUID) async {
+        savedMode = mode
+    }
+
+    func clear(userId: UUID) async {
+        clearCallCount += 1
+        savedMode = nil
+    }
 }

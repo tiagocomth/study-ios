@@ -61,12 +61,13 @@ final class StudySessionFactory {
             categoryLocal: categoryLocal,
             offlineOperationQueue: offlineOperationQueue
         )
+        let timerModeStore = StudySessionTimerModeStoreLocal()
         let studySessionSyncService = StudySessionSyncService(
             studySessionAPI: studySessionAPI,
             studySessionTracker: studySessionTracker,
-            offlineOperationQueue: offlineOperationQueue
+            offlineOperationQueue: offlineOperationQueue,
+            timerModeStore: timerModeStore
         )
-        let timerModeStore = StudySessionTimerModeStoreLocal()
         let timerService = StudySessionTimerService(now: now)
         let categoryManager = CategoryManager(
             categoryAPI: categoryAPI,
@@ -110,6 +111,7 @@ final class StudySessionFactory {
         await categoryLocal.ensureRestored(userId: userId)
         await studySessionTracker.ensureRestored(userId: userId)
         await offlineOperationQueue.ensureRestored(userId: userId)
+        await timerModeStore.ensureRestored(userId: userId)
     }
 
     func syncPendingOperations() async {
