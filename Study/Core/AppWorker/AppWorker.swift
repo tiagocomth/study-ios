@@ -30,7 +30,7 @@ final class AppWorker {
     private var cancellables: Set<AnyCancellable>
 
     init(modelContainer: ModelContainer) {
-        let session = UserSessionService()
+        let session = UserSessionService.shared
         session.restore()
         self.userSessionService = session
         self.modelContainer = modelContainer

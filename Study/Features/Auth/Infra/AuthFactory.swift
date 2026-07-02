@@ -95,12 +95,14 @@ extension AuthFactory {
     }
 
     private func makeEmailValidateVM(email: Email) -> EmailValidationViewModel {
-        EmailValidationViewModel(
+        let viewModel = EmailValidationViewModel(
             email: email,
             worker: EmailValidationWorker(
                 service: EmailValidationService(apiClient: apiClient),
                 session: session
             )
         )
+        viewModel.coordinator = authCoordinator
+        return viewModel
     }
 }

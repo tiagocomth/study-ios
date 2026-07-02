@@ -9,4 +9,5 @@ import Foundation
 
 protocol NewPasswordCoordinatorProtocol: AnyObject {
     func navigateBackToRoot()
+    func navigateBack()
 }

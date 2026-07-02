@@ -7,14 +7,17 @@ import SwiftUI
 
 struct NewPasswordView: View {
     @StateObject var viewModel: NewPasswordViewModel
+    @FocusState private var isPasswordFocused: Bool
+    @FocusState private var isConfirmPasswordFocused: Bool
 
     var body: some View {
-        HStack(spacing: 0) {
-            leftPanel
-
-            Divider()
-
-            rightPanel
+        AuthResponsiveContainer(
+            title: "Esqueci Senha",
+            subtitle: "Crie uma nova senha segura para sua conta.",
+            isHeaderCentered: true,
+            onBack: { viewModel.coordinator?.navigateBack() }
+        ) {
+            newPasswordForm
         }
         .navigationTitle("Nova senha")
     }
@@ -22,52 +25,31 @@ struct NewPasswordView: View {
 
 private extension NewPasswordView {
 
-    var leftPanel: some View {
-        Image("login")
-            .resizable()
-            .scaledToFill()
-            .frame(maxWidth: .infinity)
-            .clipped()
-    }
-
-    var rightPanel: some View {
-        VStack(spacing: 30) {
-            Spacer()
-
-            VStack(alignment: .center, spacing: 10) {
-                Text("Esqueci Senha")
-                    .font(.largeTitle.bold())
-                    .foregroundStyle(.primary)
-
-                Text("Crie uma nova senha segura para sua conta.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            newPasswordForm
-
-            Spacer()
-        }
-        .frame(maxWidth: 420)
-        .padding(60)
-        .frame(maxWidth: .infinity)
-    }
-
     var newPasswordForm: some View {
         VStack(alignment: .leading, spacing: 20) {
             AuthTextField(
                 title: "Senha",
                 placeholder: "Digite sua nova senha",
                 isSecure: true,
-                text: $viewModel.passwordValue
+                text: $viewModel.passwordValue,
+                isFocused: $isPasswordFocused
             )
+            .onSubmit {
+                isConfirmPasswordFocused = true
+            }
 
             AuthTextField(
                 title: "Confirmar senha",
                 placeholder: "Confirme sua nova senha",
                 isSecure: true,
-                text: $viewModel.passwordConfirmationValue
+                text: $viewModel.passwordConfirmationValue,
+                isFocused: $isConfirmPasswordFocused
             )
+            .onSubmit {
+                if viewModel.isFormValid && !viewModel.isLoading {
+                    viewModel.updatePassword()
+                }
+            }
 
             if let error = viewModel.errorMessage {
                 Text(error)

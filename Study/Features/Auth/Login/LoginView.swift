@@ -8,50 +8,22 @@ import SwiftUI
 struct LoginView: View {
     
     @StateObject var viewModel: LoginViewModel
+    @FocusState private var isEmailFocused: Bool
+    @FocusState private var isPasswordFocused: Bool
     
     var body: some View {
-        
-        HStack(spacing: 0) {
-            
-            leftPanel
-            
-            Divider()
-            
-            rightPanel
-            
-        }
-    }
-}
-
-private extension LoginView {
-
-    var leftPanel: some View {
-        Image("login")
-            .resizable()
-            .scaledToFill()
-            .clipped()
-    }
-
-    var rightPanel: some View {
-        VStack(spacing: 30) {
-            Spacer()
-
-            Text("Login")
-                .font(.largeTitle.bold())
-
+        AuthResponsiveContainer(title: "Login", subtitle: nil) {
             loginForm
-
-            Spacer()
 
             Button("Não tem uma conta? Criar conta") {
                 viewModel.navigateToRegister()
             }
             .buttonStyle(.link)
         }
-        .frame(maxWidth: 420)
-        .padding(60)
-
     }
+}
+
+private extension LoginView {
 
     var loginForm: some View {
 
@@ -60,15 +32,25 @@ private extension LoginView {
             AuthTextField(
                 title: "E-mail",
                 placeholder: "Digite seu e-mail",
-                text: $viewModel.email
+                text: $viewModel.email,
+                isFocused: $isEmailFocused
             )
+            .onSubmit {
+                isPasswordFocused = true
+            }
 
             AuthTextField(
                 title: "Senha",
                 placeholder: "Digite sua senha",
                 isSecure: true,
                 text: $viewModel.password,
+                isFocused: $isPasswordFocused
             )
+            .onSubmit {
+                if viewModel.isFormValid && !viewModel.isLoading {
+                    viewModel.login()
+                }
+            }
 
             HStack {
 

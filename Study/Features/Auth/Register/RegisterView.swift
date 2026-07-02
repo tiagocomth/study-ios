@@ -7,14 +7,18 @@ import SwiftUI
 
 struct RegisterView: View {
     @StateObject var viewModel: RegisterViewModel
+    @FocusState private var isNameFocused: Bool
+    @FocusState private var isEmailFocused: Bool
+    @FocusState private var isPasswordFocused: Bool
+    @FocusState private var isConfirmPasswordFocused: Bool
     
     var body: some View {
-        HStack(spacing: 0) {
-            leftPanel
-            
-            Divider()
-            
-            rightPanel
+        AuthResponsiveContainer(
+            title: "Criar conta",
+            subtitle: nil,
+            onBack: { viewModel.coordinator?.navigateBack() }
+        ) {
+            registerForm
         }
         .navigationTitle("Cadastro")
     }
@@ -22,56 +26,52 @@ struct RegisterView: View {
 
 private extension RegisterView {
 
-    var leftPanel: some View {
-        Image("login")
-            .resizable()
-            .scaledToFill()
-            .clipped()
-    }
-
-    var rightPanel: some View {
-        VStack(spacing: 30) {
-            Spacer()
-
-            Text("Criar conta")
-                .font(.largeTitle.bold())
-
-            registerForm
-
-            Spacer()
-        }
-        .frame(maxWidth: 420)
-        .padding(60)
-    }
-
     var registerForm: some View {
         VStack(alignment: .leading, spacing: 20) {
             AuthTextField(
                 title: "Nome",
                 placeholder: "Digite seu nome",
-                text: $viewModel.name
+                text: $viewModel.name,
+                isFocused: $isNameFocused
             )
+            .onSubmit {
+                isEmailFocused = true
+            }
 
             AuthTextField(
                 title: "E-mail",
                 placeholder: "Digite seu e-mail",
-                text: $viewModel.email
+                text: $viewModel.email,
+                isFocused: $isEmailFocused
             )
             .autocorrectionDisabled()
+            .onSubmit {
+                isPasswordFocused = true
+            }
 
             AuthTextField(
                 title: "Senha",
                 placeholder: "Digite sua senha",
                 isSecure: true,
-                text: $viewModel.password
+                text: $viewModel.password,
+                isFocused: $isPasswordFocused
             )
+            .onSubmit {
+                isConfirmPasswordFocused = true
+            }
 
             AuthTextField(
                 title: "Repetir senha",
                 placeholder: "Confirme sua senha",
                 isSecure: true,
-                text: $viewModel.confirmPassword
+                text: $viewModel.confirmPassword,
+                isFocused: $isConfirmPasswordFocused
             )
+            .onSubmit {
+                if viewModel.isFormValid && !viewModel.isLoading {
+                    viewModel.register()
+                }
+            }
 
             if let error = viewModel.errorMessage {
                 Text(error)

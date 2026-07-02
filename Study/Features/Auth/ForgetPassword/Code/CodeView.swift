@@ -10,12 +10,13 @@ struct CodeView: View {
     @FocusState private var isCodeFieldFocused: Bool
 
     var body: some View {
-        HStack(spacing: 0) {
-            leftPanel
-
-            Divider()
-
-            rightPanel
+        AuthResponsiveContainer(
+            title: "Acabamos de enviar um código para o seu email",
+            subtitle: "Confirme sua identidade",
+            isHeaderCentered: true,
+            onBack: { viewModel.coordinator?.navigateBack() }
+        ) {
+            validationForm
         }
         .navigationTitle("Código")
         .onAppear { isCodeFieldFocused = true }
@@ -24,41 +25,13 @@ struct CodeView: View {
 
 private extension CodeView {
 
-    var leftPanel: some View {
-        Image("login")
-            .resizable()
-            .scaledToFill()
-            .frame(maxWidth: .infinity)
-            .clipped()
-    }
-
-    var rightPanel: some View {
-        VStack(spacing: 30) {
-            Spacer()
-
-            VStack(alignment: .center, spacing: 30) {
-                Text("Acabamos de enviar um código para o seu email")
-                    .font(.largeTitle.bold())
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.primary)
-
-                Text("Confirme sua identidade")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            validationForm
-
-            Spacer()
-        }
-        .frame(maxWidth: 420)
-        .padding(60)
-        .frame(maxWidth: .infinity)
-    }
-
     var validationForm: some View {
         VStack(alignment: .leading, spacing: 24) {
-            codeInput
+            HStack {
+                Spacer()
+                codeInput
+                Spacer()
+            }
 
             if let error = viewModel.errorMessage {
                 Text(error)
@@ -86,17 +59,22 @@ private extension CodeView {
         ZStack {
             // Campo real (invisível) que captura a digitação.
             TextField("", text: $viewModel.codeValue)
+                #if os(iOS)
+                .keyboardType(.numberPad)
+                #endif
                 .focused($isCodeFieldFocused)
                 .opacity(0.01)
-                .frame(height: 1)
+                .frame(width: 1, height: 1)
+                .offset(x: -1000, y: -1000)
                 .focusEffectDisabled()
 
             // Representação visual em caixas.
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 ForEach(0..<PasswordResetCode.length, id: \.self) { index in
                     digitBox(at: index)
                 }
             }
+            .frame(maxWidth: 328)
             .contentShape(Rectangle())
             .onTapGesture { isCodeFieldFocused = true }
         }
@@ -109,7 +87,8 @@ private extension CodeView {
 
         return Text(digit)
             .font(.title2.bold())
-            .frame(width: 48, height: 54)
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
             .background(Color.adaptiveTextFieldBackground)
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
@@ -119,26 +98,4 @@ private extension CodeView {
     }
 }
 
-#if canImport(UIKit)
-import UIKit
-#else
-import AppKit
-#endif
 
-private extension Color {
-    static var adaptiveTextFieldBackground: Color {
-        #if canImport(UIKit)
-        return Color(uiColor: .secondarySystemBackground)
-        #else
-        return Color(nsColor: .controlBackgroundColor)
-        #endif
-    }
-
-    static var adaptiveSeparator: Color {
-        #if canImport(UIKit)
-        return Color(uiColor: .separator)
-        #else
-        return Color(nsColor: .separatorColor)
-        #endif
-    }
-}
